@@ -222,10 +222,6 @@ function renderCabinet2() {
                                 
                                 ${med.status === 'Pending' ? `
                                     <div class="mt-2 flex items-center gap-2">
-                                        <div class="flex items-center gap-2 bg-white/30 p-1.5 rounded-xl border border-white/20">
-                                            <input type="checkbox" id="he-check-${med.id}" class="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
-                                            <label for="he-check-${med.id}" class="text-[9px] font-bold text-gray-700 cursor-pointer">HE Given</label>
-                                        </div>
                                         ${isStaffNurse() ? `
                                             <button onclick="promptUpdateTime(${patient.bedNumber}, '${med.id}', '${med.timeDue}')" class="p-1 bg-white/50 rounded-lg hover:bg-white text-blue-600 transition-all" title="Adjust Time">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -398,8 +394,8 @@ window.registerNewPatient = function(bedNumber) {
     patient.medications = patientMeds;
 
     updateDB(db);
-    generateLog('PATIENT_REGISTRATION', currentUser.id, `Registered new patient ${patient.info.name} (MRN: ${patient.info.mrn}) with ${medCount} prescribed medications to Bed ${bedNumber}`);
-    showNotification(`Patient registered successfully with ${medCount} prescribed medications.`, 'success');
+    generateLog('PATIENT_REGISTRATION', currentUser.id, `Registered new patient ${patient.info.name} (MRN: ${patient.info.mrn}) with ${medCount} available medications to Bed ${bedNumber}`);
+    showNotification(`Patient registered successfully with ${medCount} available medications.`, 'success');
     renderCabinet2();
 };
 
@@ -932,18 +928,11 @@ function openPatientModal(bedNumber) {
                                 </div>
                             </div>
                             
-                            <div class="flex gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                            <div class="flex gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                 <span>${med.dose}</span>
                                 <span>•</span>
                                 <span>${med.route}</span>
                             </div>
-
-                            ${isPending ? `
-                                <div class="mt-2 flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                    <input type="checkbox" id="modal-he-check-${med.id}" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
-                                    <label for="modal-he-check-${med.id}" class="text-[10px] font-black text-slate-600 cursor-pointer uppercase tracking-tighter">HE Verified</label>
-                                </div>
-                            ` : ''}
                         </div>
                     `;
                 }).join('')}
@@ -957,15 +946,6 @@ function openPatientModal(bedNumber) {
 
 // Ensure modal buttons use the global handlers
 window.handleDispense = function(bed, id) {
-    const modalCheck = document.getElementById(`modal-he-check-${id}`);
-    const dashCheck = document.getElementById(`he-check-${id}`);
-    const isChecked = (modalCheck && modalCheck.checked) || (dashCheck && dashCheck.checked);
-
-    if (!isChecked) {
-        showNotification('Clinical Safety: HE Verification Required', 'error');
-        return;
-    }
-
     const db = getDB();
     const patient = db.patients.find(p => p.bedNumber === bed);
     const med = patient.medications.find(m => m.id === id);

@@ -3,8 +3,8 @@ const initialData = {
     users: [
         { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Director of Nursing' },
         { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Assistant Director of Nursing' },
-        { fullname: 'Ms. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Advanced Nursing Practitioner' },
-        { fullname: 'Ms. Shazreen Arin', id: 'Shazreen_Arin', password: 'Arin123', role: 'Advanced Nursing Practitioner' },
+        { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
+        { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
         { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Advanced Nursing Practitioner' },
         { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Clinical Pharmacist' },
         { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Clinical Audit Officer' }, 
@@ -95,7 +95,9 @@ const initialData = {
         'Prof. Dr. Salizar Mohamed Ludin',
         'Prof. Dr. Azlina Daud',
         'Prof. Dr. Siti Roshaidai',
-        'Assoc. Prof. Dr. Kamil Che Hassan'
+        'Assoc. Prof. Dr. Kamil Che Hassan',
+        'Dr. Khairina Jupri',
+        'Dr. Shazreen',
     ],
     inventory: [], // Pharmacological Inventory
     patients: [], // Clinical Bed Units 1-25

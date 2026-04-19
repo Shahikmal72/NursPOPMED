@@ -272,7 +272,7 @@
                 <div class="pt-4 border-t border-slate-100 text-center space-y-2">
                     <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">© 2026 IIUM KON • Biomedical Security</p>
                     <div class="flex items-center justify-center gap-4">
-                        <p class="text-[8px] text-blue-600 font-bold uppercase tracking-widest">Innovation in Nursing</p>
+                        <p class="text-[8px] text-blue-600 font-bold uppercase tracking-widest">Innovation in Nursing Informatics</p>
                         <button onclick="confirmHardReset()" class="text-[8px] text-red-400 font-black uppercase tracking-widest hover:text-red-600 transition-colors">System Reset</button>
                     </div>
                 </div>
@@ -473,18 +473,18 @@
                             </div>
                         </div>
 
-                        <!-- Prescribed Medications List -->
-                        <div id="cabinet1-prescribed-panel" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hidden">
-                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Prescribed Medications</h3>
-                            <div id="cabinet1-prescribed-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Available Medications List -->
+                        <div id="cabinet1-available-panel" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hidden">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Available Medications</h3>
+                            <div id="cabinet1-available-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
 
-                        <!-- Global Medication Overview -->
+                        <!-- Global Available Medications Overview -->
                         <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Global Prescriptions</h3>
+                                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Global Available Medications</h3>
                                 <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-tighter">Ward-wide View</span>
                             </div>
                             <div id="cabinet1-global-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -498,8 +498,8 @@
                         <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
                             <div class="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                                 <div>
-                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Cabinet 1: Medicine Order</h2>
-                                    <p class="text-sm text-gray-500 font-medium italic">Create and send medicine to patient bedside</p>
+                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Cabinet 1: Medication Transfer</h2>
+                                    <p class="text-sm text-gray-500 font-medium italic">Send available medicine to patient bedside</p>
                                 </div>
                                 <div class="flex gap-2">
                                     <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Stock Check</button>
@@ -511,7 +511,7 @@
                             <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
                                 <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Simple Guide</p>
                                 <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
-                                    Use this section to **Order Medicine**. Once you fill the form, the medicine will be sent to the **Patient bedside** for dispensing.
+                                    Use this section to **Transfer Medicine**. Select a medication from the **Available Medications** list for the patient to send it to the bedside.
                                 </p>
                             </div>
 
@@ -571,7 +571,7 @@
                                         </select>
                                     </div>
                                     <div class="space-y-2">
-                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Prescribing Doctor</label>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Authorizing Clinician</label>
                                         <select id="order-doctor" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-semibold" required>
                                             <!-- Populated by JS -->
                                         </select>
@@ -874,6 +874,35 @@
             const userName = currentUser.fullname || currentUser.id.replace(/_/g, ' ');
             document.getElementById('current-user-display').innerText = `${userRole}: ${userName}`;
             
+            // UI Access Control: Disable Cabinet 1 for non-doctors
+            const cab1Btn = document.querySelector('button[onclick="showSection(\'cabinet1\')"]');
+            const cab1Section = document.getElementById('cabinet1-section');
+            const transferForm = document.getElementById('cabinet1-form');
+
+            if (!isMedicalDoctor()) {
+                if (transferForm) {
+                    const inputs = transferForm.querySelectorAll('input, select, button[type="submit"]');
+                    inputs.forEach(input => input.disabled = true);
+                    
+                    // Add visual warning overlay to form
+                    if (!document.getElementById('md-only-notice')) {
+                        const notice = document.createElement('div');
+                        notice.id = 'md-only-notice';
+                        notice.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-bold text-center';
+                        notice.innerHTML = 'RESTRICTED ACCESS: Medication transfer tools are reserved for Medical Doctors only.';
+                        transferForm.appendChild(notice);
+                    }
+                }
+            } else {
+                // Re-enable if user is MD (relevant for session persistence)
+                if (transferForm) {
+                    const inputs = transferForm.querySelectorAll('input, select, button[type="submit"]');
+                    inputs.forEach(input => input.disabled = false);
+                    const notice = document.getElementById('md-only-notice');
+                    if (notice) notice.remove();
+                }
+            }
+
             showSection('dashboard');
         }
 
@@ -962,14 +991,14 @@
             });
 
             if (globalList.innerHTML === '') {
-                globalList.innerHTML = '<p class="text-center text-slate-300 italic text-[10px] py-10">No pending prescriptions found.</p>';
+                globalList.innerHTML = '<p class="text-center text-slate-300 italic text-[10px] py-10">No pending medications found.</p>';
             }
         }
 
         function selectPatientForCabinet1(bedNumber) {
             if (!bedNumber) {
                 document.getElementById('cabinet1-patient-summary').classList.add('hidden');
-                document.getElementById('cabinet1-prescribed-panel').classList.add('hidden');
+                document.getElementById('cabinet1-available-panel').classList.add('hidden');
                 return;
             }
 
@@ -982,8 +1011,8 @@
                 document.getElementById('cab1-progress').innerText = patient.info.clinicalProgress;
                 document.getElementById('cabinet1-patient-summary').classList.remove('hidden');
 
-                // Update prescribed list
-                const list = document.getElementById('cabinet1-prescribed-list');
+                // Update available list
+                const list = document.getElementById('cabinet1-available-list');
                 list.innerHTML = '';
                 
                 patient.medications.forEach(med => {
@@ -1012,7 +1041,7 @@
                     list.appendChild(div);
                 });
                 
-                document.getElementById('cabinet1-prescribed-panel').classList.remove('hidden');
+                document.getElementById('cabinet1-available-panel').classList.remove('hidden');
 
                 // Auto-fill hidden inputs
                 document.getElementById('order-patient-name').value = patient.info.name;
@@ -1448,6 +1477,13 @@
 
         document.getElementById('cabinet1-form').addEventListener('submit', (e) => {
             e.preventDefault();
+
+            // Role Check: Only Medical Doctors can prescribe
+            if (!isMedicalDoctor()) {
+                showNotification('Access Denied: Only Medical Doctors are authorized to prescribe medications.', 'error');
+                return;
+            }
+
             const orderData = {
                 patientName: document.getElementById('order-patient-name').value,
                 bedNumber: document.getElementById('order-bed-number').value,

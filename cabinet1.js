@@ -15,10 +15,19 @@ function processOrder(orderData) {
         return false;
     }
 
-    // Duplicate check
+    // Duplicate and Availability check
     const patient = db.patients.find(p => p.bedNumber === parseInt(orderData.bedNumber));
-    if (patient && patient.medications.some(m => m.name === orderData.medicationName && m.status === 'Pending')) {
-        if (!confirm(`Warning: ${orderData.medicationName} is already pending for Bed ${orderData.bedNumber}. Proceed anyway?`)) {
+    
+    // Check if the medication is in the patient's "Available" list
+    const availableMed = patient && patient.medications.find(m => m.name === orderData.medicationName && m.status === 'Pending');
+    
+    if (!availableMed) {
+        showNotification(`Clinical Error: ${orderData.medicationName} is not in the patient's Available Medications list.`, 'error');
+        return false;
+    }
+
+    if (patient && patient.medications.some(m => m.name === orderData.medicationName && m.status === 'Dispensed')) {
+        if (!confirm(`Warning: ${orderData.medicationName} is already Dispensed for Bed ${orderData.bedNumber}. Proceed anyway?`)) {
             return false;
         }
     }
@@ -28,34 +37,14 @@ function processOrder(orderData) {
     
     // Trigger Transfer Simulation before final processing
     triggerTransferSimulation(() => {
-        // Create medication entry for Cabinet 2
-        const medEntry = {
-            id: `MED-${Date.now()}`,
-            name: orderData.medicationName,
-            dose: orderData.dose,
-            route: orderData.route,
-            frequency: orderData.frequency,
-            timeDue: orderData.timeDue,
-            status: 'Pending',
-            nurseId: currentUser.id,
-            timeDispensed: null,
-            timeAdministered: null
-        };
-
-        // Update patient record
-        if (!patient.occupied) {
-            patient.occupied = true;
-            patient.info = {
-                name: orderData.patientName,
-                mrn: orderData.mrn,
-                bedNumber: orderData.bedNumber,
-                doctor: orderData.doctor || 'Clinical Protocol Entry' 
-            };
-        }
-        patient.medications.push(medEntry);
+        // Update existing medication entry instead of pushing a new one
+        availableMed.status = 'Pending (Transferred)'; // Intermediate state for log/tracking
+        availableMed.status = 'Pending'; // Keep it pending for Cabinet 2
+        availableMed.nurseId = currentUser.id;
+        availableMed.timeDispensed = null;
 
         updateDB(db);
-        generateLog('TRANSFER_CABINET_2', currentUser.id, `Sent medicine: ${orderData.medicationName} to Bed ${orderData.bedNumber}`);
+        generateLog('TRANSFER_CABINET_2', currentUser.id, `Sent available medicine: ${orderData.medicationName} to Bed ${orderData.bedNumber}`);
         showNotification(`Success: ${orderData.medicationName} sent to Patient Bed.`, 'success');
         
         // Refresh UI

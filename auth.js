@@ -89,6 +89,11 @@ window.isStaffNurse = function() {
     return staffRoles.includes(currentUser.role);
 };
 
+window.isMedicalDoctor = function() {
+    if (!currentUser) return false;
+    return currentUser.role === 'Medical Doctor';
+};
+
 // Activity listeners for session timeout
 window.addEventListener('mousedown', resetSessionTimeout);
 window.addEventListener('keypress', resetSessionTimeout);
