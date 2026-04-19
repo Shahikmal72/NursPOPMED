@@ -305,23 +305,202 @@ function generateShariahNotice(info) {
 }
 
 /**
- * Health Education (HE) Pamphlet Generator
- * Professional A4 Layout for Patients (Medication Specific & Shariah Compliant)
+ * Nurse Digital Stamp Generator
+ * Creates a professional clinical signature for eMAR documentation
  */
-function generateHEPamphlet(patient, med) {
-    // Fuzzy match medication info
-    const medNameKey = Object.keys(medicationInfo).find(key => 
+function generateNurseStamp(nurseName, nurseRole) {
+    const date = new Date().toLocaleDateString();
+    return `
+        <div style="border: 2px solid #1e3a8a; padding: 10px; border-radius: 12px; display: inline-block; background: white; min-width: 180px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <div style="width: 24px; height: 24px; background: #1e3a8a; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🩺</div>
+                <p style="margin: 0; font-size: 9px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.1em;">Digitally Verified</p>
+            </div>
+            <p style="margin: 0; font-family: 'Georgia', serif; font-style: italic; font-weight: 900; color: #0f172a; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">${nurseName}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <p style="margin: 0; font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">${nurseRole}</p>
+                <p style="margin: 0; font-size: 8px; font-weight: 800; color: #94a3b8;">${date}</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Mobile-Friendly Health Education (HE) Modal
+ * Directly pops up in the UI for phone users without opening new windows
+ */
+function showHEModal(patient, med) {
+    const db = getDB();
+    
+    // Fuzzy match medication info from the main clinical database in data.js
+    const medNameKey = Object.keys(db.medicationProtocols).find(key => 
         med.name.toLowerCase().includes(key.toLowerCase()) || 
         key.toLowerCase().includes(med.name.toLowerCase())
     );
     
-    const info = medicationInfo[medNameKey] || {
-        purpose: "This medication is given to treat your clinical condition as prescribed by your attending doctor.",
-        instructions: "Take exactly as instructed by your healthcare provider. Do not stop without medical advice.",
-        sideEffects: ["Nausea", "Dizziness", "Mild stomach upset"],
-        highAlert: false,
-        containsPorcine: false
+    const protocol = db.medicationProtocols[medNameKey];
+    
+    // Fallback if not found in protocols
+    const info = (protocol && protocol.he) ? protocol.he : {
+        reason: "This medication is given to treat your clinical condition as prescribed by your attending doctor.",
+        sideEffects: "Nausea, Dizziness, Mild stomach upset",
+        citation: "Standard Clinical Guidelines"
     };
+
+    const clinicalInstructions = protocol ? protocol.instructions : "Take exactly as instructed by your healthcare provider.";
+    
+    const modal = document.createElement('div');
+    modal.id = 'he-mobile-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[500] flex flex-col animate-fade-in';
+    
+    modal.innerHTML = `
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-6 text-white shrink-0 sticky top-0 z-10 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black tracking-tight leading-none">Health Education</h2>
+                        <p class="text-[9px] font-bold text-blue-200 uppercase tracking-widest mt-1">Medication Protocol</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('he-mobile-modal').remove()" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-90">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10">
+                <p class="text-[9px] font-black text-blue-100 uppercase tracking-widest mb-1 opacity-60">Medication Identified</p>
+                <h3 class="text-lg font-black text-white">${med.name}</h3>
+                <p class="text-[10px] font-bold text-blue-200 uppercase tracking-widest mt-1">${med.dose} • ${med.route}</p>
+            </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-grow overflow-y-auto p-6 space-y-6 pb-24">
+            
+            ${protocol && protocol.highAlert ? `
+                <div class="bg-red-50 border-2 border-red-200 p-5 rounded-3xl flex items-start gap-4">
+                    <div class="text-2xl">⚠️</div>
+                    <div>
+                        <h4 class="text-xs font-black text-red-700 uppercase tracking-widest mb-1">High-Alert Protocol</h4>
+                        <p class="text-[11px] font-bold text-red-900/70 leading-relaxed">This medication requires extra caution. Follow all safety checks strictly.</p>
+                    </div>
+                </div>
+            ` : ''}
+
+            <section class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-blue-600 rounded-full"></div>
+                    <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Clinical Purpose</h4>
+                </div>
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                    <p class="text-sm font-bold text-slate-800 leading-relaxed italic">"${info.reason}"</p>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-indigo-600 rounded-full"></div>
+                    <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nursing Instructions</h4>
+                </div>
+                <div class="bg-indigo-50/50 p-5 rounded-3xl border border-indigo-100">
+                    <p class="text-sm font-black text-indigo-900 leading-relaxed">${clinicalInstructions}</p>
+                    
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div class="bg-white/60 p-3 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Diluent</p>
+                            <p class="text-[10px] font-bold text-slate-800">${protocol ? protocol.diluent : 'N/A'}</p>
+                        </div>
+                        <div class="bg-white/60 p-3 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume</p>
+                            <p class="text-[10px] font-bold text-slate-800">${protocol ? protocol.volume : 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-red-600 rounded-full"></div>
+                    <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Side Effects & Safety</h4>
+                </div>
+                <div class="bg-red-50/50 p-5 rounded-3xl border border-red-100">
+                    <ul class="space-y-2">
+                        ${(Array.isArray(info.sideEffects) ? info.sideEffects : [info.sideEffects]).map(se => `
+                            <li class="flex items-center gap-3 text-sm font-bold text-red-900/80">
+                                <span class="w-1 h-1 bg-red-400 rounded-full shrink-0"></span>
+                                ${se}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </section>
+
+            ${protocol && protocol.containsPorcine ? `
+                <div class="bg-amber-50 border border-amber-200 p-5 rounded-3xl flex items-start gap-4 border-dashed">
+                    <div class="text-2xl">🕌</div>
+                    <div>
+                        <h4 class="text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Shariah Clinical Notice</h4>
+                        <p class="text-[11px] font-bold text-amber-900/70 leading-relaxed">Porcine-derived medication. Permissible in clinical necessity (Dharurah).</p>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Footer Stamp -->
+            <div class="pt-6 border-t border-slate-100 flex flex-col items-center gap-4 text-center">
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Clinical Digital Stamp</p>
+                    ${generateNurseStamp(currentUser.fullname, currentUser.role)}
+                </div>
+                <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-4">
+                    Source: ${info.citation || 'Standard Nursing Guidelines'}
+                </p>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div class="fixed bottom-0 left-0 w-full p-6 bg-slate-900/80 backdrop-blur-md border-t border-white/10 flex gap-3">
+            <button onclick="document.getElementById('he-mobile-modal').remove()" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border border-white/5">Close</button>
+            <button onclick="generateHEPamphlet(${JSON.stringify(patient).replace(/"/g, '&quot;')}, ${JSON.stringify(med).replace(/"/g, '&quot;')}); document.getElementById('he-mobile-modal').remove()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/40 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print PDF
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+/**
+ * Health Education (HE) Pamphlet Generator
+ * Professional A4 Layout for Patients (Medication Specific & Shariah Compliant)
+ */
+function generateHEPamphlet(patient, med) {
+    const db = getDB();
+    
+    // Fuzzy match medication info from the main clinical database in data.js
+    const medNameKey = Object.keys(db.medicationProtocols).find(key => 
+        med.name.toLowerCase().includes(key.toLowerCase()) || 
+        key.toLowerCase().includes(med.name.toLowerCase())
+    );
+    
+    const protocol = db.medicationProtocols[medNameKey];
+    
+    // Fallback if not found in protocols
+    const info = (protocol && protocol.he) ? protocol.he : {
+        reason: "This medication is given to treat your clinical condition as prescribed by your attending doctor.",
+        sideEffects: "Nausea, Dizziness, Mild stomach upset",
+        citation: "Standard Clinical Guidelines"
+    };
+
+    // Medication-specific instructions from protocol
+    const clinicalInstructions = protocol ? protocol.instructions : "Take exactly as instructed by your healthcare provider. Do not stop without medical advice.";
+    const diluentInfo = protocol ? protocol.diluent : "Not applicable";
+    const volumeInfo = protocol ? protocol.volume : "Not applicable";
+    const stabilityInfo = protocol ? protocol.stability : "Stable at room temperature";
 
     const content = `
         <!DOCTYPE html>
@@ -329,44 +508,48 @@ function generateHEPamphlet(patient, med) {
         <head>
             <title>Patient Education: ${med.name}</title>
             <style>
-                @page { size: A4; margin: 2cm; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 40px; }
-                .pamphlet-container { max-width: 800px; margin: auto; }
-                .header { text-align: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
-                .hospital-name { font-size: 26px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.02em; }
-                .subtitle { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 5px; }
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.5; color: #1e293b; margin: 0; padding: 30px; background: #f8fafc; }
+                .pamphlet-container { max-width: 850px; margin: auto; background: white; padding: 50px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+                .header { text-align: center; border-bottom: 5px solid #1e3a8a; padding-bottom: 25px; margin-bottom: 35px; }
+                .hospital-name { font-size: 32px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.03em; }
+                .subtitle { font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3em; margin-top: 8px; }
                 
-                .patient-box { background: #f8fafc; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                .label { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em; }
-                .value { font-size: 15px; font-weight: 800; color: #0f172a; }
+                .patient-box { background: #f1f5f9; border-radius: 24px; padding: 30px; border: 1px solid #e2e8f0; margin-bottom: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+                .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.1em; }
+                .value { font-size: 16px; font-weight: 800; color: #0f172a; }
                 
-                .section { margin-bottom: 30px; }
-                .section-title { font-size: 15px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 5px solid #1e3a8a; padding-left: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-                .section-content { font-size: 14px; font-weight: 500; padding-left: 20px; color: #334155; }
+                .section { margin-bottom: 35px; }
+                .section-title { font-size: 16px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 6px solid #1e3a8a; padding-left: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+                .section-content { font-size: 15px; font-weight: 500; padding-left: 24px; color: #334155; }
                 
-                .highlight-blue { background: #eff6ff; padding: 20px; border-radius: 16px; border-left: 5px solid #3b82f6; }
-                .highlight-red { background: #fef2f2; padding: 20px; border-radius: 16px; border-left: 5px solid #ef4444; }
+                .highlight-blue { background: #f0f9ff; padding: 25px; border-radius: 20px; border-left: 6px solid #0ea5e9; }
+                .highlight-indigo { background: #eef2ff; padding: 25px; border-radius: 20px; border-left: 6px solid #6366f1; }
+                .highlight-red { background: #fff1f2; padding: 25px; border-radius: 20px; border-left: 6px solid #f43f5e; }
                 
-                .nurse-section { margin-top: 60px; padding-top: 25px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; }
+                .protocol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+                .protocol-item { background: white; padding: 12px 18px; border-radius: 12px; border: 1px solid #e2e8f0; }
+                
+                .nurse-section { margin-top: 60px; padding-top: 30px; border-top: 2px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-end; }
                 .no-print { margin-top: 50px; text-align: center; }
-                .print-btn { background: #1e3a8a; color: white; border: none; padding: 15px 40px; border-radius: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.3s; }
-                .print-btn:hover { background: #1e40af; transform: translateY(-2px); }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 18px 45px; border-radius: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.15em; transition: all 0.4s; box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.4); }
+                .print-btn:hover { background: #1e40af; transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(30, 58, 138, 0.5); }
                 
                 ul { margin: 0; padding-left: 20px; }
-                li { margin-bottom: 5px; font-weight: 600; color: #475569; }
-                @media print { .no-print { display: none; } body { padding: 0; } }
+                li { margin-bottom: 8px; font-weight: 600; color: #475569; }
+                @media print { .no-print { display: none; } body { padding: 0; background: white; } .pamphlet-container { box-shadow: none; padding: 20px; } }
             </style>
         </head>
         <body>
             <div class="pamphlet-container">
                 <div class="header">
                     <div class="hospital-name">Kulliyyah of Nursing • IIUM</div>
-                    <div class="subtitle">Official Medication Education Guide</div>
+                    <div class="subtitle">Clinical Education & Safety Guide</div>
                 </div>
 
                 <div class="patient-box">
                     <div>
-                        <div class="label">Recipient Name</div>
+                        <div class="label">Patient Recipient</div>
                         <div class="value">${patient.info.name}</div>
                     </div>
                     <div>
@@ -378,61 +561,94 @@ function generateHEPamphlet(patient, med) {
                         <div class="value">${med.name}</div>
                     </div>
                     <div>
-                        <div class="label">Prescribed Dose & Route</div>
+                        <div class="label">Prescribed Dosing</div>
                         <div class="value">${med.dose} • ${med.route}</div>
                     </div>
                 </div>
 
-                ${generateHighAlertWarning(info)}
+                ${generateHighAlertWarning(protocol || { highAlert: false })}
 
                 <div class="section">
-                    <div class="section-title">💊 Purpose of Medication</div>
+                    <div class="section-title">🩺 Clinical Purpose</div>
                     <div class="section-content highlight-blue">
-                        ${info.purpose}
+                        <p style="margin:0; font-weight:700;">${info.reason}</p>
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">📋 How to Use (Instructions)</div>
-                    <div class="section-content">
-                        ${info.instructions}
+                    <div class="section-title">🏥 Administration Guidelines & Protocol</div>
+                    <div class="section-content highlight-indigo">
+                        <p style="margin:0 0 15px 0; font-weight:800; color:#4338ca;">NURSING PROTOCOL:</p>
+                        <p style="margin:0; font-weight:600; line-height:1.6;">${clinicalInstructions}</p>
+                        
+                        <div class="protocol-grid">
+                            <div class="protocol-item">
+                                <p class="label">Diluent Required</p>
+                                <p style="margin:0; font-size:12px; font-weight:800; color:#1e293b;">${diluentInfo}</p>
+                            </div>
+                            <div class="protocol-item">
+                                <p class="label">Volume / Rate</p>
+                                <p style="margin:0; font-size:12px; font-weight:800; color:#1e293b;">${volumeInfo}</p>
+                            </div>
+                            <div class="protocol-item">
+                                <p class="label">Physical Stability</p>
+                                <p style="margin:0; font-size:12px; font-weight:800; color:#1e293b;">${stabilityInfo}</p>
+                            </div>
+                            <div class="protocol-item">
+                                <p class="label">Clinical Frequency</p>
+                                <p style="margin:0; font-size:12px; font-weight:800; color:#1e293b;">${med.frequency}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">⚠️ What to Watch For (Side Effects)</div>
+                    <div class="section-title">⚠️ Safety Monitoring (Side Effects)</div>
                     <div class="section-content highlight-red">
+                        <p style="margin:0 0 10px 0; font-weight:700;">Please notify your nurse if you experience any of the following:</p>
                         <ul>
-                            ${info.sideEffects.map(se => `<li>${se}</li>`).join('')}
+                            ${(Array.isArray(info.sideEffects) ? info.sideEffects : [info.sideEffects]).map(se => `<li>${se}</li>`).join('')}
                         </ul>
-                        <p style="margin-top: 15px; font-weight: 800; color: #b91c1c; font-size: 12px;">
-                            *** ALERT YOUR NURSE IMMEDIATELY if you experience itching, rash, swelling, or difficulty breathing. ***
-                        </p>
+                        <div style="margin-top: 20px; background: #fff1f2; border: 1px solid #fda4af; padding: 15px; border-radius: 12px;">
+                            <p style="margin:0; font-weight: 900; color: #be123c; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                *** EMERGENCY ALERT ***
+                            </p>
+                            <p style="margin:5px 0 0 0; font-weight: 700; color: #9f1239; font-size: 13px;">
+                                Call for help immediately if you have difficulty breathing, chest pain, or sudden swelling.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                ${generateShariahNotice(info)}
+                ${generateShariahNotice(protocol || { containsPorcine: false })}
 
                 <div class="nurse-section">
                     <div>
-                        <div class="label">Clinical Educator</div>
+                        <div class="label">Clinical Educator (Digital Stamp)</div>
                         ${generateNurseStamp(currentUser.fullname, currentUser.role)}
                     </div>
                     <div style="text-align: right;">
-                        <div class="label">Education Date & Time</div>
+                        <div class="label">Verification Timestamp</div>
                         <div class="value">${new Date().toLocaleString()}</div>
+                        <p style="margin: 5px 0 0 0; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Reference: ${med.id.split('-').pop()}</p>
                     </div>
                 </div>
 
                 <div class="no-print">
-                    <button class="print-btn" onclick="window.print()">🖨️ Print Education Sheet</button>
+                    <button class="print-btn" onclick="window.print()">🖨️ Print Clinical Education Guide</button>
+                </div>
+                
+                <div style="margin-top: 40px; text-align: center; border-top: 1px solid #f1f5f9; pt: 20px;">
+                    <p style="font-size: 9px; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.2em;">
+                        Source: ${info.citation || 'International Nursing Care Standards'} • Kulliyyah of Nursing • IIUM
+                    </p>
                 </div>
             </div>
         </body>
         </html>
     `;
 
-    const w = window.open('', '', 'width=900,height=850');
+    const w = window.open('', '', 'width=950,height=900');
     w.document.write(content);
     w.document.close();
 }

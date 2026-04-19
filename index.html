@@ -255,6 +255,141 @@
             min-height: 44px;
         }
 
+        /* HIGH-END ENGINEER UI REFINEMENTS */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --clinical-blue: #0f172a;
+            --clinical-accent: #3b82f6;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-premium:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px -5px rgba(30, 58, 138, 0.3);
+        }
+        .btn-premium::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+        .btn-premium:hover::after {
+            left: 100%;
+        }
+
+        .status-chip {
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .vitals-card {
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .vitals-card:hover {
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+
+        /* Responsive Visibility */
+        .desktop-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .desktop-grid {
+                display: block;
+            }
+            .desktop-grid > div {
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        /* Navigation Refinement */
+        nav {
+            background: rgba(15, 23, 42, 0.9) !important;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 50%; width: 0; height: 2px;
+            background: #3b82f6;
+            transition: all 0.3s;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after {
+            width: 80%;
+        }
+
+        .sticky-action {
+            position: sticky;
+            top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-only {
+                display: none !important;
+            }
+        }
+
         /* PRINT SYSTEM */
         @media print {
             body {
@@ -664,7 +799,7 @@
 
             <!-- Cabinet 2 Section -->
             <section id="cabinet2-section" class="hidden">
-                <div class="max-w-4xl mx-auto">
+                <div class="max-w-[1600px] mx-auto px-4">
                     <div class="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-6 md:mb-8">
                         <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
                             <div>
@@ -1014,21 +1149,9 @@
             if (sectionId === 'dashboard') updateDashboard();
             if (sectionId === 'cabinet1') populateCabinet1Patients();
             if (sectionId === 'cabinet3') populateCabinet3Patients();
-            if (sectionId === 'cabinet2') {
-                renderCabinet2();
-                loadDefaultBCMAPatient();
-            }
+            if (sectionId === 'cabinet2') renderCabinet2();
             if (sectionId === 'inventory') renderInventory();
             if (sectionId === 'logs') renderAuditTrails();
-        }
-
-        function loadDefaultBCMAPatient() {
-            const db = getDB();
-            const occupiedPatients = db.patients.filter(p => p.occupied);
-            if (occupiedPatients.length > 0 && !currentBCMAPatient) {
-                currentBCMAPatient = occupiedPatients[0];
-                renderCabinet2();
-            }
         }
 
         function selectPatientForBCMA(mrn) {
