@@ -10,7 +10,7 @@ const initialData = {
         { id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Clinical Audit Officer' }, 
         { id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Clinical Audit Officer' }, 
         { id: 'Admin_ITD', password: 'Admin123', role: 'Information Technology Officer' },
-        { id: 'Admin_KON', password: 'Admin123', role: 'Administrator KON' },
+        { id: 'Part_Time', password: 'PT123', role: 'Staff Nurse' },
     ],
     medications: {
         oral: [
