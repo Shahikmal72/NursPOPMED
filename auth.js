@@ -85,13 +85,53 @@ function checkAuth() {
 
 window.isStaffNurse = function() {
     if (!currentUser) return false;
-    const staffRoles = ['Director of Nursing', 'Assistant Director of Nursing', 'Advanced Nursing Practitioner'];
-    return staffRoles.includes(currentUser.role);
+    // Strict Role-Based Access Control (SRBAC)
+    // Only high-level nursing roles are authorized for clinical configuration and timing adjustments
+    const authorizedNursingRoles = [
+        'Director of Nursing', 
+        'Assistant Director of Nursing', 
+        'Advanced Nursing Practitioner',
+        'Nurse Manager'
+    ];
+    return authorizedNursingRoles.includes(currentUser.role);
 };
 
 window.isMedicalDoctor = function() {
     if (!currentUser) return false;
+    // Security Fix: Strict match for "Medical Doctor" only. 
+    // Generic "Doctor" role is restricted to read-only or basic clinical viewing.
     return currentUser.role === 'Medical Doctor';
+};
+
+/**
+ * Enhanced Security: Action Authorization Engine
+ * Verifies if the current user is permitted to perform specific high-stakes actions
+ */
+window.isAuthorizedForAction = function(actionType) {
+    if (!currentUser) return false;
+    
+    const role = currentUser.role;
+    
+    switch(actionType) {
+        case 'MED_ADMINISTRATION':
+            // Only Registered Nurses and Advanced Practitioners can administer medications
+            return ['Nurse', 'Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
+            
+        case 'TIMING_ADJUSTMENT':
+            // Only Senior Nursing staff can adjust clinical schedules
+            return window.isStaffNurse();
+            
+        case 'PRESCRIPTION_ORDER':
+            // ONLY Medical Doctors can issue new prescriptions. Generic "Doctor" role is blocked.
+            return role === 'Medical Doctor';
+            
+        case 'CONTROLLED_DRUG_ACCESS':
+            // Requires double-verification or senior nursing role
+            return ['Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
+            
+        default:
+            return false;
+    }
 };
 
 // Activity listeners for session timeout

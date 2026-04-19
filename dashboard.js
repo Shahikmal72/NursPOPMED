@@ -191,6 +191,13 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
         return;
     }
 
+    // Security Verification: Ensure the user is authorized for Medication Administration
+    if (!isAuthorizedForAction('MED_ADMINISTRATION')) {
+        showNotification('SECURITY DENIED: Your role is not authorized for medication administration.', 'error');
+        generateLog('SECURITY_VIOLATION', currentUser.id, `Unauthorized admin attempt for ${medication.name} (Bed ${bedNumber})`);
+        return;
+    }
+
     // SIMPLIFIED WORKFLOW: Internal 5 Rights Verification (No manual scan)
     const verification = validate5Rights(patient, medication, patient.info.mrn, medication.barcode || '');
 
