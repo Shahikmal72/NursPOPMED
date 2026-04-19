@@ -5,22 +5,27 @@ let sessionTimeout = null;
 
 function login(userId, password) {
     const db = getDB();
-    // Allow matching with either space or underscore for better usability
-    const normalizedInput = userId.trim().replace(/\s+/g, '_');
+    if (!userId || !password) return { success: false, message: 'Please enter both Clinical ID and Security Key.' };
+
+    // Allow matching with either space or underscore, case-insensitive
+    const normalizedInput = userId.trim().toLowerCase().replace(/\s+/g, '_');
     
-    const user = db.users.find(u => 
-        (u.id === userId || u.id === normalizedInput) && 
-        u.password === password
-    );
+    const user = db.users.find(u => {
+        const normalizedDBId = u.id.toLowerCase();
+        return (normalizedDBId === normalizedInput || u.id === userId) && u.password === password;
+    });
     
     if (user) {
         currentUser = user;
-        sessionStorage.setItem('popmed_user', JSON.stringify(user));
+        // Ensure the role exists, fallback if missing
+        if (!currentUser.role) currentUser.role = 'Clinical Staff';
+        
+        sessionStorage.setItem('popmed_user', JSON.stringify(currentUser));
         resetSessionTimeout();
-        generateLog('LOGIN', user.id, 'User logged in');
-        return true;
+        generateLog('LOGIN', currentUser.id, 'User logged in');
+        return { success: true, user: currentUser };
     }
-    return false;
+    return { success: false, message: 'Access Denied: Invalid Clinical ID or Security Key.' };
 }
 
 function logout() {

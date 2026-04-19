@@ -483,11 +483,16 @@ const initialData = {
 function initializeDB() {
     let existingDB = JSON.parse(localStorage.getItem('popmed_db'));
     
-    // Proactive Sync: Ensure users, inventory, medications and protocols are always up to date
+    // Proactive Sync: Ensure users, developers, supervisor, inventory, medications and protocols are always up to date
     if (existingDB) {
+        // Sync Users (preserve any dynamic data if added, but update base properties)
         existingDB.users = initialData.users;
+        
+        // Sync Developers and Supervisor
         existingDB.developers = initialData.developers;
         existingDB.supervisor = initialData.supervisor;
+        
+        // Sync Clinical Data
         existingDB.medications = initialData.medications;
         existingDB.medicationProtocols = initialData.medicationProtocols;
         existingDB.ivSolutions = initialData.ivSolutions;
