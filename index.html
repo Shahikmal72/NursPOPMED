@@ -576,6 +576,12 @@
                                         </select>
                                     </div>
                                     <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Prescribing Doctor</label>
+                                        <select id="order-doctor" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-semibold" required>
+                                            <!-- Populated by JS -->
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
                                         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Time Due</label>
                                         <input type="datetime-local" id="order-time-due" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
                                     </div>
@@ -808,7 +814,7 @@
         function showMainApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('current-user-display').innerText = `${currentUser.role}: ${currentUser.id}`;
+            document.getElementById('current-user-display').innerText = `${currentUser.role}: ${currentUser.fullname || currentUser.id}`;
             showSection('dashboard');
         }
 
@@ -1257,6 +1263,18 @@
                 opt.innerText = sol;
                 solSelect.appendChild(opt);
             });
+
+            // Populate Cabinet 1 Doctors
+            const docSelect = document.getElementById('order-doctor');
+            if (docSelect) {
+                docSelect.innerHTML = '<option value="">Select Doctor</option>';
+                db.doctors.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc;
+                    opt.innerText = doc;
+                    docSelect.appendChild(opt);
+                });
+            }
         }
 
         // Form Handlers
@@ -1277,7 +1295,7 @@
                             <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                         </div>
                         <h2 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter">Welcome Back,</h2>
-                        <p class="text-xl font-extrabold text-blue-600 mb-6">${user.id.replace(/_/g, ' ')}</p>
+                        <p class="text-xl font-extrabold text-blue-600 mb-6">${user.fullname || user.id.replace(/_/g, ' ')}</p>
                         <div class="space-y-4">
                             <p class="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">Authorized as: ${user.role}</p>
                             <div class="pt-6">
@@ -1310,6 +1328,7 @@
                 bedNumber: document.getElementById('order-bed-number').value,
                 mrn: document.getElementById('order-mrn').value,
                 medicationName: document.getElementById('order-med-name').value,
+                doctor: document.getElementById('order-doctor').value,
                 dose: document.getElementById('order-dose').value,
                 route: document.getElementById('order-route').value,
                 frequency: document.getElementById('order-frequency').value,

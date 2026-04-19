@@ -36,7 +36,7 @@ function logout() {
                     <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 </div>
                 <h2 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter">Goodbye,</h2>
-                <p class="text-xl font-extrabold text-blue-600 mb-6">${currentUser.id.replace('_', ' ')}</p>
+                <p class="text-xl font-extrabold text-blue-600 mb-6">${currentUser.fullname || currentUser.id.replace('_', ' ')}</p>
                 <div class="space-y-4">
                     <p class="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Thank you for your clinical service today. Have a safe rest!</p>
                     <div class="pt-6">
@@ -80,7 +80,7 @@ function checkAuth() {
 
 window.isStaffNurse = function() {
     if (!currentUser) return false;
-    const staffRoles = ['Clinical Medication Nurse', 'Nurse Officer', 'Nursing Informatics Specialist'];
+    const staffRoles = ['Director of Nursing', 'Assistant Director of Nursing', 'Advanced Nursing Practitioner'];
     return staffRoles.includes(currentUser.role);
 };
 

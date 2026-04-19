@@ -49,7 +49,7 @@ function processOrder(orderData) {
                 name: orderData.patientName,
                 mrn: orderData.mrn,
                 bedNumber: orderData.bedNumber,
-                doctor: 'Clinical Protocol Entry' 
+                doctor: orderData.doctor || 'Clinical Protocol Entry' 
             };
         }
         patient.medications.push(medEntry);
