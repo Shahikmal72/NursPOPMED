@@ -275,36 +275,17 @@
                     </div>
                 </div>
 
-                <h2 class="text-base font-black text-slate-900 tracking-tighter mb-4 uppercase">System Developers</h2>
+                <h2 class="text-base font-black text-slate-900 tracking-tighter mb-4 uppercase flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+                    System Developers
+                </h2>
                 
-                <div class="space-y-2 w-full">
-                    <div class="p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
-                        <p class="text-[12px] font-bold text-slate-800">Muhammad Shah Ikmal Junaidi</p>
-                    </div>
-                    <div class="p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
-                        <p class="text-[12px] font-bold text-slate-800">Arisya Elyana Ahmad Fairuz</p>
-                    </div>
-                    <div class="p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
-                        <p class="text-[12px] font-bold text-slate-800">Nuraleeya Tahirah Mohammad</p>
-                    </div>
-                    <div class="p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
-                        <p class="text-[12px] font-bold text-slate-800">Nurshazreen Aqeela Mat Zaib</p>
-                    </div>
-                    <div class="p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
-                        <p class="text-[12px] font-bold text-slate-800">Siti Nurkhairina Amad Jupri</p>
-                    </div>
+                <div id="developer-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                    <!-- Developers populated dynamically from data.js -->
+                </div>
 
-                    <div class="mt-4 p-4 bg-blue-900 rounded-2xl border border-blue-800 shadow-md">
-                        <div class="flex items-center gap-3">
-                            <div class="p-1.5 bg-blue-800 rounded-lg text-blue-200">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                            </div>
-                            <div>
-                                <p class="text-[9px] font-black text-blue-300 uppercase tracking-widest">Supervisor</p>
-                                <p class="text-xs font-black text-white">Dr. Mohd. Azri Abd. Jalil</p>
-                            </div>
-                        </div>
-                    </div>
+                <div id="supervisor-container" class="mt-4 w-full">
+                    <!-- Supervisor populated dynamically from data.js -->
                 </div>
             </div>
         </div>
@@ -804,7 +785,46 @@
                 showLoginScreen();
             }
             populateDropdowns();
+            renderDevelopers();
         });
+
+        function renderDevelopers() {
+            const db = getDB();
+            const devList = document.getElementById('developer-list');
+            const supervisorContainer = document.getElementById('supervisor-container');
+            
+            if (devList && db.developers) {
+                devList.innerHTML = db.developers.map(dev => `
+                    <div class="p-3 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-center min-h-[60px]">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-1 h-1 bg-slate-300 group-hover:bg-blue-500 rounded-full transition-colors"></div>
+                            <p class="text-[11px] font-black text-slate-800 leading-none">${dev.name}</p>
+                        </div>
+                        <p class="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest pl-3">${dev.role}</p>
+                    </div>
+                `).join('');
+            }
+            
+            if (supervisorContainer && db.supervisor) {
+                supervisorContainer.innerHTML = `
+                    <div class="p-5 bg-gradient-to-br from-blue-900 to-indigo-950 rounded-[2rem] border border-blue-800 shadow-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                            <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.827a1 1 0 00-.788 0l-7 3a1 1 0 000 1.846l7 3a1 1 0 00.788 0l7-3a1 1 0 000-1.846l-7-3z"></path><path d="M3 10.827l4.285 1.837a.5.5 0 00.14.042l1.356.339a1 1 0 00.438 0l1.356-.339a.5.5 0 00.14-.042L15 10.827v1.247l-4.785 2.051a1 1 0 01-.43 0L5 12.074V10.827z"></path><path d="M3 14.227l4.285 1.837a.5.5 0 00.14.042l1.356.339a1 1 0 00.438 0l1.356-.339a.5.5 0 00.14-.042L15 14.227v1.247l-4.785 2.051a1 1 0 01-.43 0L5 15.474v-1.247z"></path></svg>
+                        </div>
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="p-2.5 bg-blue-800/50 rounded-2xl text-blue-200 border border-blue-700/50 backdrop-blur-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">Clinical Supervision</p>
+                                <p class="text-[13px] font-black text-white tracking-tight">${db.supervisor.name}</p>
+                                <p class="text-[9px] font-bold text-blue-300/60 uppercase tracking-widest mt-0.5">${db.supervisor.designation}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         function showLoginScreen() {
             document.getElementById('login-screen').classList.remove('hidden');
@@ -1069,11 +1089,16 @@
 
             // Create a premium bombastic modal for Protocol & HE
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-fade-in';
+            modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-4 md:p-6 animate-fade-in';
             modal.innerHTML = `
-                <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden transform animate-pop-in border border-white/20">
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden transform animate-pop-in border border-white/20 relative">
+                    <!-- Mobile-friendly Close Button (Top Right) -->
+                    <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 z-20 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all touch-target flex items-center justify-center" aria-label="Close">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+
                     <!-- Header -->
-                    <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-10 text-white relative">
+                    <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-8 md:p-10 text-white relative">
                         <div class="absolute top-0 right-0 p-8 opacity-10">
                             <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.994 7.994 0 0111 5a7.994 7.994 0 012 1.196V15a7.994 7.994 0 00-2-1.196 7.994 7.994 0 00-2 0V4.804z"></path></svg>
                         </div>
@@ -1084,88 +1109,103 @@
                         </div>
                     </div>
                     
-                    <div class="p-10 grid grid-cols-1 md:grid-cols-2 gap-10 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                    <div class="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 overflow-y-auto max-h-[70vh] custom-scrollbar bg-slate-50/30">
                         <!-- Left: Clinical Protocol & Physical Integrity -->
                         <div class="space-y-6">
-                            <div class="flex items-center gap-3 mb-2">
+                            <div class="flex items-center gap-3 mb-2 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                                 <div class="p-2 bg-blue-100 text-blue-700 rounded-xl">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Clinical Protocol</h3>
+                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.15em]">Clinical Protocol</h3>
                             </div>
                             
-                            <div class="space-y-4">
-                                <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diluent & Volume</p>
-                                    <p class="text-sm font-extrabold text-slate-800">${protocol.diluent} • ${protocol.volume}</p>
+                            <div class="space-y-4 px-1">
+                                <div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Diluent & Volume</p>
+                                    <p class="text-[13px] font-black text-slate-800">${protocol.diluent} • ${protocol.volume}</p>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Instructions</p>
-                                    <p class="text-xs font-medium text-slate-600 leading-relaxed italic">"${protocol.instructions}"</p>
+                                <div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Instructions</p>
+                                    <p class="text-[11px] font-bold text-slate-600 leading-relaxed italic">"${protocol.instructions}"</p>
                                 </div>
                                 
                                 <!-- Physical Integrity Verification -->
-                                <div class="mt-8 p-4 bg-red-50 rounded-2xl border border-red-100">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                        <h4 class="text-[10px] font-black text-red-700 uppercase tracking-widest">Integrity Verification</h4>
+                                <div class="mt-8 p-5 bg-red-50/50 rounded-3xl border border-red-100/50">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="p-1.5 bg-red-100 text-red-600 rounded-lg">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        </div>
+                                        <h4 class="text-[10px] font-black text-red-700 uppercase tracking-widest">Integrity Check</h4>
                                     </div>
-                                    <p class="text-[9px] font-bold text-red-800 leading-relaxed uppercase tracking-tighter">
+                                    <p class="text-[9px] font-black text-red-800/40 leading-relaxed uppercase tracking-tighter mb-2">
                                         DO NOT ADMINISTER IF:
                                     </p>
-                                    <ul class="list-disc list-inside text-[9px] font-bold text-red-600 mt-1 space-y-0.5">
-                                        <li>Visible Sedimentation or Cloudiness</li>
-                                        <li>Leakage from Ampoule/Vial/Bag</li>
-                                        <li>Contamination or Discoloration</li>
-                                        <li>Damaged or Compromised Packaging</li>
+                                    <ul class="space-y-1.5">
+                                        <li class="flex items-center gap-2 text-[10px] font-bold text-red-600">
+                                            <span class="w-1 h-1 bg-red-400 rounded-full"></span>
+                                            Visible Sedimentation / Cloudiness
+                                        </li>
+                                        <li class="flex items-center gap-2 text-[10px] font-bold text-red-600">
+                                            <span class="w-1 h-1 bg-red-400 rounded-full"></span>
+                                            Leakage or Compromised Container
+                                        </li>
+                                        <li class="flex items-center gap-2 text-[10px] font-bold text-red-600">
+                                            <span class="w-1 h-1 bg-red-400 rounded-full"></span>
+                                            Contamination or Discoloration
+                                        </li>
                                     </ul>
                                 </div>
 
-                                <div class="p-3 bg-amber-50 rounded-2xl border border-amber-100">
-                                    <p class="text-[9px] font-bold text-amber-800 uppercase tracking-widest mb-1">Stability</p>
-                                    <p class="text-[10px] font-bold text-amber-900">${protocol.stability}</p>
+                                <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                    <p class="text-[9px] font-black text-amber-800/50 uppercase tracking-widest mb-1">Stability Period</p>
+                                    <p class="text-[11px] font-black text-amber-900">${protocol.stability}</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right: Health Education (HE) -->
                         <div class="space-y-6">
-                            <div class="flex items-center gap-3 mb-2">
+                            <div class="flex items-center gap-3 mb-2 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                                 <div class="p-2 bg-green-100 text-green-700 rounded-xl">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Patient Education Hub</h3>
+                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.15em]">Patient Education Hub</h3>
                             </div>
 
-                            <div class="space-y-4">
-                                <div class="p-5 bg-green-50 rounded-[2rem] border border-green-100 relative overflow-hidden group/he">
-                                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover/he:scale-110 transition-transform">
-                                        <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>
+                            <div class="space-y-4 px-1">
+                                <div class="p-6 bg-green-50 rounded-[2.5rem] border border-green-100 relative overflow-hidden group/he">
+                                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover/he:scale-110 transition-transform duration-500">
+                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>
                                     </div>
-                                    <p class="text-[10px] font-black text-green-600 uppercase tracking-widest mb-2">Therapeutic Purpose</p>
-                                    <p class="text-sm font-bold text-slate-800 leading-relaxed">${protocol.he.reason}</p>
+                                    <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-2">Therapeutic Purpose</p>
+                                    <p class="text-[13px] font-black text-slate-800 leading-relaxed">${protocol.he.reason}</p>
                                 </div>
                                 
-                                <div class="p-5 bg-red-50 rounded-[2rem] border border-red-100 relative overflow-hidden">
-                                    <p class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Potential Adverse Reactions</p>
-                                    <p class="text-sm font-bold text-slate-800 leading-relaxed">${protocol.he.sideEffects}</p>
+                                <div class="p-6 bg-red-50 rounded-[2.5rem] border border-red-100 relative overflow-hidden">
+                                    <p class="text-[9px] font-black text-red-500 uppercase tracking-widest mb-2">Potential Adverse Reactions</p>
+                                    <p class="text-[13px] font-black text-slate-800 leading-relaxed">${protocol.he.sideEffects}</p>
                                 </div>
 
-                                <div class="flex gap-2">
-                                    <button onclick="printHEGuide('${medName}')" class="flex-grow bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Print HE Guide</button>
-                                    <button onclick="showStaffGuide('${medName}')" class="flex-grow bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Staff Nurse HE Guide</button>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="printHEGuide('${medName}')" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Print Guide</button>
+                                    <button onclick="showStaffGuide('${medName}')" class="bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-200 active:scale-95">Staff Guide</button>
                                 </div>
 
-                                <div class="pt-4 border-t border-slate-100">
-                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Source Citation</p>
-                                    <p class="text-[10px] font-black text-blue-600">${protocol.he.citation || 'Standard Clinical Guidelines'}</p>
+                                <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
+                                    <div>
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Source Citation</p>
+                                        <p class="text-[10px] font-black text-blue-600 tracking-tight">${protocol.he.citation || 'Standard Clinical Guidelines'}</p>
+                                    </div>
+                                    <div class="p-2 bg-slate-50 rounded-xl border border-slate-100">
+                                        <img src="logo.png" class="w-5 h-5 opacity-40 grayscale" alt="Logo">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-10 pt-0">
-                        <button onclick="this.closest('.fixed').remove()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg shadow-2xl hover:bg-slate-800 transition-all transform active:scale-95 uppercase tracking-[0.2em]">Close Monograph</button>
+                    <div class="p-6 md:p-10 pt-0">
+                        <button onclick="this.closest('.fixed').remove()" class="w-full bg-slate-900 text-white py-4 md:py-5 rounded-2xl font-black text-base md:text-lg shadow-2xl hover:bg-slate-800 transition-all transform active:scale-95 uppercase tracking-[0.2em] touch-target">Close Monograph</button>
                     </div>
                 </div>
             `;

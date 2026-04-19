@@ -59,6 +59,18 @@ const initialData = {
             'Calcium Gluconate 10% Injection'
         ]
     },
+    // System Development Team
+    developers: [
+        { name: 'Mr. Muhammad Shah Ikmal Junaidi', role: 'System Developer' },
+        { name: 'Ms. Arisya Elyana Ahmad Fairuz', role: 'Project Manager' },
+        { name: 'Ms. Nuraleeya Tahirah Mohammad', role: 'Clinical Workflow Analyst' },
+        { name: 'Ms. Nurshazreen Aqeela Mat Zaib', role: 'Project Coordinator & Quality Lead' },
+        { name: 'Ms. Siti Nurkhairina Amad Jupri', role: 'Clinical Workflow Designer' }
+    ],
+    supervisor: {
+        name: 'Dr. Mohd. Azri Abd. Jalil',
+        designation: 'Innovation in Nursing Supervisor'
+    },
     ivSolutions: [
         'Sodium Chloride 0.9% (Normal Saline) 500ml Infusion',
         'Sodium Chloride 0.9% (Normal Saline) 1000ml Infusion',
@@ -78,13 +90,12 @@ const initialData = {
         'Dr. Shidqiyyah Abd Hamid (Specialist)',
         'Dr. Azmir Ahmad',
         'Assoc. Prof. Dr. Siti Noorkhairina Binti Sowtali',
-        'Assoc. Prof. Dr. Sanisah Saidi'
+        'Assoc. Prof. Dr. Sanisah Saidi',
         'Prof. Dr. Mohd Said Nurumal',
         'Prof. Dr. Salizar Mohamed Ludin',
-        'Prof. Dr. Azlina Daud'
-        'Prof. Dr. Siti Roshaidai'
+        'Prof. Dr. Azlina Daud',
+        'Prof. Dr. Siti Roshaidai',
         'Assoc. Prof. Dr. Kamil Che Hassan'
-
     ],
     inventory: [], // Pharmacological Inventory
     patients: [], // Clinical Bed Units 1-25
@@ -475,9 +486,12 @@ function initializeDB() {
     // Proactive Sync: Ensure users, inventory, medications and protocols are always up to date
     if (existingDB) {
         existingDB.users = initialData.users;
+        existingDB.developers = initialData.developers;
+        existingDB.supervisor = initialData.supervisor;
         existingDB.medications = initialData.medications;
         existingDB.medicationProtocols = initialData.medicationProtocols;
         existingDB.ivSolutions = initialData.ivSolutions;
+        existingDB.doctors = initialData.doctors;
         
         // Add missing medications to inventory
         const allMedNames = [
