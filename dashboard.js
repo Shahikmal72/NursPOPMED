@@ -593,48 +593,66 @@ function renderInventory() {
         if (isLow) lowCount++;
         
         const div = document.createElement('div');
-        // Redesigned to Light/Advanced Theme
-        div.className = 'grid grid-cols-12 gap-4 p-6 items-center hover:bg-slate-50 transition-all group border-b border-slate-100';
+        // Mobile-friendly card layout that switches to grid on desktop
+        div.className = 'p-5 md:p-6 border-b border-slate-100 hover:bg-slate-50 transition-all group';
         
         const expiryDate = new Date(item.expiry);
         const isExpired = expiryDate < new Date();
         const isNearExpiry = (expiryDate - new Date()) / (1000 * 60 * 60 * 24) < 30;
 
         div.innerHTML = `
-            <div class="col-span-3">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pharmacological Agent</p>
-                <p class="font-black text-slate-900 group-hover:text-blue-600 transition-colors">${item.name}</p>
-                <span class="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full mt-2 inline-block">ID: ${item.id}</span>
-            </div>
-            <div class="col-span-2">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch Tracking</p>
-                <p class="text-xs font-mono font-bold text-slate-700">${item.batch}</p>
-            </div>
-            <div class="col-span-2">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Stock</p>
-                <div class="flex items-center gap-2">
-                    <p class="text-xl font-black ${isLow ? 'text-red-500 animate-pulse' : 'text-blue-600'}">${item.quantity}</p>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">Units</span>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                <!-- Medicine Name -->
+                <div class="md:col-span-3">
+                    <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Medicine</p>
+                    <div class="flex items-center justify-between md:block">
+                        <p class="font-black text-slate-900 group-hover:text-blue-600 transition-colors text-base md:text-sm">${item.name}</p>
+                        <span class="md:hidden text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">ID: ${item.id}</span>
+                    </div>
+                    <span class="hidden md:inline-block text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full mt-2">ID: ${item.id}</span>
                 </div>
-            </div>
-            <div class="col-span-2">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expiry Control</p>
-                <p class="text-xs font-bold ${isExpired ? 'text-red-600' : isNearExpiry ? 'text-amber-600' : 'text-slate-600'}">
-                    ${item.expiry}
-                    ${isExpired ? ' (EXPIRED)' : isNearExpiry ? ' (NEAR EXPIRY)' : ''}
-                </p>
-            </div>
-            <div class="col-span-1">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Storage Temp</p>
-                <p class="text-xs font-bold text-slate-700">${item.temperature}°C</p>
-            </div>
-            <div class="col-span-2 flex justify-end gap-2">
-                <button onclick="restockItem('${item.id}')" class="p-3 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-90" title="Replenish Stock">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                </button>
-                <button onclick="reportAssetIssue('${item.id}')" class="p-3 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all transform active:scale-90" title="Report Clinical Asset Issue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </button>
+
+                <!-- Batch -->
+                <div class="grid grid-cols-2 md:block md:col-span-2 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                    <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
+                    <p class="text-xs font-mono font-bold text-slate-700 text-right md:text-left">${item.batch}</p>
+                </div>
+
+                <!-- Stock -->
+                <div class="grid grid-cols-2 md:block md:col-span-2 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                    <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">In Stock</p>
+                    <div class="flex items-center justify-end md:justify-start gap-2">
+                        <p class="text-lg md:text-xl font-black ${isLow ? 'text-red-500 animate-pulse' : 'text-blue-600'}">${item.quantity}</p>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Units</span>
+                    </div>
+                </div>
+
+                <!-- Expiry -->
+                <div class="grid grid-cols-2 md:block md:col-span-2 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                    <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expiry</p>
+                    <p class="text-[11px] md:text-xs font-bold ${isExpired ? 'text-red-600' : isNearExpiry ? 'text-amber-600' : 'text-slate-600'} text-right md:text-left">
+                        ${item.expiry}
+                        <span class="block md:inline text-[8px]">${isExpired ? ' (EXPIRED)' : isNearExpiry ? ' (NEARBY)' : ''}</span>
+                    </p>
+                </div>
+
+                <!-- Temp -->
+                <div class="grid grid-cols-2 md:block md:col-span-1 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                    <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Temp</p>
+                    <p class="text-xs font-bold text-slate-700 text-right md:text-left">${item.temperature}°C</p>
+                </div>
+
+                <!-- Actions -->
+                <div class="md:col-span-2 flex justify-center md:justify-end gap-3 md:gap-2 mt-2 md:mt-0">
+                    <button onclick="restockItem('${item.id}')" class="flex-grow md:flex-none flex items-center justify-center gap-2 md:block p-3 bg-blue-50 text-blue-600 rounded-xl md:rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-95" title="Replenish Stock">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <span class="md:hidden text-xs font-bold">Restock</span>
+                    </button>
+                    <button onclick="reportAssetIssue('${item.id}')" class="flex-grow md:flex-none flex items-center justify-center gap-2 md:block p-3 bg-red-50 text-red-600 rounded-xl md:rounded-2xl hover:bg-red-600 hover:text-white transition-all transform active:scale-95" title="Report Issue">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span class="md:hidden text-xs font-bold">Report</span>
+                    </button>
+                </div>
             </div>
         `;
         container.appendChild(div);
@@ -661,7 +679,8 @@ function renderAuditTrails() {
     
     recentLogs.forEach(log => {
         const div = document.createElement('div');
-        div.className = 'grid grid-cols-12 gap-4 p-4 items-center hover:bg-blue-50/30 transition-colors group';
+        // Responsive log row
+        div.className = 'p-4 md:p-6 hover:bg-blue-50/30 transition-colors group border-b border-slate-50';
         
         let actionBadgeColor = 'bg-gray-100 text-gray-600';
         if (log.action.includes('DISPENSED')) actionBadgeColor = 'bg-green-100 text-green-700';
@@ -670,12 +689,24 @@ function renderAuditTrails() {
         if (log.action.includes('USER')) actionBadgeColor = 'bg-yellow-100 text-yellow-700';
 
         div.innerHTML = `
-            <div class="col-span-3 text-[11px] font-bold text-gray-400 font-mono">${formatDateTime(log.timestamp)}</div>
-            <div class="col-span-2 text-xs font-extrabold text-blue-900">${log.nurseId}</div>
-            <div class="col-span-2">
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-tighter ${actionBadgeColor}">${log.action.replace(/_/g, ' ')}</span>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
+                <div class="md:col-span-3 text-[10px] md:text-[11px] font-bold text-gray-400 font-mono flex items-center justify-between md:block">
+                    <span class="md:hidden uppercase tracking-widest text-[8px]">Timestamp</span>
+                    ${formatDateTime(log.timestamp)}
+                </div>
+                <div class="md:col-span-2 text-xs font-extrabold text-blue-900 flex items-center justify-between md:block">
+                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400">Personnel</span>
+                    ${log.nurseId}
+                </div>
+                <div class="md:col-span-2 flex items-center justify-between md:block">
+                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400">Action</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-tighter ${actionBadgeColor}">${log.action.replace(/_/g, ' ')}</span>
+                </div>
+                <div class="md:col-span-5 text-[11px] md:text-xs font-medium text-gray-600 italic group-hover:text-blue-900 transition-colors flex flex-col md:block">
+                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400 mb-1 not-italic">Details</span>
+                    ${log.details}
+                </div>
             </div>
-            <div class="col-span-5 text-xs font-medium text-gray-600 italic group-hover:text-blue-900 transition-colors">${log.details}</div>
         `;
         container.appendChild(div);
     });

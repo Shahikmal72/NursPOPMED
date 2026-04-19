@@ -325,9 +325,9 @@
                 </div>
                 <div id="nav-links" class="hidden md:flex gap-6 ml-10">
                     <button onclick="showSection('dashboard')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Home</button>
-                    <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Order</button>
-                    <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Patient Meds</button>
-                    <button onclick="showSection('cabinet3')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">IV Room</button>
+                    <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 1</button>
+                    <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 2</button>
+                    <button onclick="showSection('cabinet3')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 3</button>
                     <button onclick="showSection('inventory')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Stock</button>
                     <button onclick="showSection('logs')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">History</button>
                 </div>
@@ -344,9 +344,9 @@
         <!-- Mobile Nav -->
         <div class="md:hidden bg-blue-700 text-white p-2 flex justify-around text-[10px] overflow-x-auto font-bold uppercase tracking-tighter">
             <button onclick="showSection('dashboard')" class="px-2 py-1">Home</button>
-            <button onclick="showSection('cabinet1')" class="px-2 py-1">Order</button>
-            <button onclick="showSection('cabinet2')" class="px-2 py-1">Patients</button>
-            <button onclick="showSection('cabinet3')" class="px-2 py-1">IV</button>
+            <button onclick="showSection('cabinet1')" class="px-2 py-1">Cab 1</button>
+            <button onclick="showSection('cabinet2')" class="px-2 py-1">Cab 2</button>
+            <button onclick="showSection('cabinet3')" class="px-2 py-1">Cab 3</button>
             <button onclick="showSection('inventory')" class="px-2 py-1">Stock</button>
             <button onclick="showSection('logs')" class="px-2 py-1">History</button>
         </div>
@@ -437,9 +437,9 @@
                     <div class="bg-white p-5 md:p-6 rounded-2xl md:rounded-xl shadow-md border border-slate-100">
                         <h3 class="text-base md:text-lg font-bold mb-3 md:mb-4">Quick Actions</h3>
                         <div class="grid grid-cols-2 gap-3 md:gap-4">
-                            <button onclick="showSection('cabinet1')" class="p-3 md:p-4 bg-blue-50 text-blue-800 rounded-xl hover:bg-blue-100 font-bold text-center text-xs md:text-sm transition-colors border border-blue-100/50">Order Med</button>
-                            <button onclick="showSection('cabinet2')" class="p-3 md:p-4 bg-green-50 text-green-800 rounded-xl hover:bg-green-100 font-bold text-center text-xs md:text-sm transition-colors border border-green-100/50">Dispensing</button>
-                            <button onclick="showSection('cabinet3')" class="p-3 md:p-4 bg-purple-50 text-purple-800 rounded-xl hover:bg-purple-100 font-bold text-center text-xs md:text-sm transition-colors border border-purple-100/50">IV Request</button>
+                            <button onclick="showSection('cabinet1')" class="p-3 md:p-4 bg-blue-50 text-blue-800 rounded-xl hover:bg-blue-100 font-bold text-center text-xs md:text-sm transition-colors border border-blue-100/50">Cabinet 1</button>
+                            <button onclick="showSection('cabinet2')" class="p-3 md:p-4 bg-green-50 text-green-800 rounded-xl hover:bg-green-100 font-bold text-center text-xs md:text-sm transition-colors border border-green-100/50">Cabinet 2</button>
+                            <button onclick="showSection('cabinet3')" class="p-3 md:p-4 bg-purple-50 text-purple-800 rounded-xl hover:bg-purple-100 font-bold text-center text-xs md:text-sm transition-colors border border-purple-100/50">Cabinet 3</button>
                             <button onclick="showSection('inventory')" class="p-3 md:p-4 bg-gray-50 text-gray-800 rounded-xl hover:bg-gray-100 font-bold text-center text-xs md:text-sm transition-colors border border-gray-100/50">Stock</button>
                         </div>
                     </div>
@@ -503,13 +503,13 @@
                         <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
                             <div class="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                                 <div>
-                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Medicine Order</h2>
+                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Cabinet 1: Medicine Order</h2>
                                     <p class="text-sm text-gray-500 font-medium italic">Create and send medicine to patient bedside</p>
                                 </div>
                                 <div class="flex gap-2">
                                     <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Stock Check</button>
                                     <div class="bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
-                                        Digital Order Unit
+                                        Cabinet 1
                                     </div>
                                 </div>
                             </div>
@@ -602,10 +602,10 @@
                     <div class="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-6 md:mb-8">
                         <div class="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                             <div>
-                                <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">Patient Meds</h2>
+                                <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">Cabinet 2: Patient Meds</h2>
                                 <p class="text-xs md:text-sm text-gray-500 font-bold italic">Give medicine to patients at their bedside</p>
                             </div>
-                            <div class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">Dispensing Room</div>
+                            <div class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">Cabinet 2</div>
                         </div>
                         <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
                             <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Simple Guide</p>
@@ -630,7 +630,7 @@
                                     <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.183.394l-1.158.908a2 2 0 00-.742 2.053 2 2 0 001.458 1.458l.412.062a2 2 0 001.458-1.458l.158-.158a2 2 0 00.517-3.86l.158-.318a2 2 0 01.517-3.86l.477-2.387a2 2 0 00-.547-1.022l-.908-1.158a2 2 0 00-2.053-.742l-.062.412a2 2 0 001.458 1.458l.158.158a2 2 0 003.86-.517l.318.158a2 2 0 013.86-.517l2.387.477a2 2 0 001.022.547l.908 1.158a2 2 0 00.742 2.053l-.412-.062a2 2 0 00-1.458 1.458l-.158.158a2 2 0 00-3.86.517l-.318-.158a2 2 0 01-3.86-.517l-2.387-.477a2 2 0 00-1.022-.547l-.908-1.158z"></path></svg>
                                 </div>
                                 <div class="text-center md:text-left">
-                                    <h2 class="text-2xl md:text-3xl font-black text-purple-900 tracking-tighter leading-none mb-2">IV Room</h2>
+                                    <h2 class="text-2xl md:text-3xl font-black text-purple-900 tracking-tighter leading-none mb-2">Cabinet 3: IV Room</h2>
                                     <p class="text-sm text-gray-500 font-bold italic">Mix medicine and prepare drips</p>
                                 </div>
                             </div>
@@ -712,13 +712,13 @@
                             </div>
 
                             <div class="bg-slate-50/50 rounded-2xl md:rounded-[2rem] border border-slate-100 overflow-hidden">
-                                <div class="grid grid-cols-12 gap-2 md:gap-4 p-4 md:p-6 bg-white border-b border-slate-100 font-black text-[8px] md:text-[10px] text-slate-400 uppercase tracking-widest">
-                                    <div class="col-span-5 md:col-span-3">Medicine Name</div>
-                                    <div class="hidden md:block md:col-span-2">Batch No</div>
-                                    <div class="col-span-4 md:col-span-2">In Stock</div>
-                                    <div class="hidden md:block md:col-span-2">Expiry</div>
-                                    <div class="hidden md:block md:col-span-1">Temp</div>
-                                    <div class="col-span-3 md:col-span-2 text-right">Action</div>
+                                <div class="hidden md:grid grid-cols-12 gap-2 md:gap-4 p-4 md:p-6 bg-white border-b border-slate-100 font-black text-[8px] md:text-[10px] text-slate-400 uppercase tracking-widest">
+                                    <div class="col-span-3">Medicine Name</div>
+                                    <div class="col-span-2">Batch No</div>
+                                    <div class="col-span-2">In Stock</div>
+                                    <div class="col-span-2">Expiry</div>
+                                    <div class="col-span-1">Temp</div>
+                                    <div class="col-span-2 text-right">Action</div>
                                 </div>
                                 <div id="inventory-list" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar">
                                     <!-- Inventory items populated here -->
@@ -743,7 +743,7 @@
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                            <div class="grid grid-cols-12 gap-2 md:gap-4 p-4 bg-gray-100 text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                            <div class="hidden md:grid grid-cols-12 gap-2 md:gap-4 p-4 bg-gray-100 text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
                                 <div class="col-span-3">Time</div>
                                 <div class="col-span-2">Staff</div>
                                 <div class="col-span-2">Action</div>
