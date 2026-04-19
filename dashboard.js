@@ -993,7 +993,13 @@ function openPatientModal(bedNumber) {
         <!-- Polypharmacy Management Section -->
         <div class="mt-6 pt-6 border-t">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-blue-800">Clinical Verification & Medication</h3>
+                <div class="flex items-center gap-4">
+                    <h3 class="font-bold text-blue-800">Clinical Verification & Medication</h3>
+                    <button onclick="printMedicationSheet(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Print eMAR
+                    </button>
+                </div>
                 <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
                     <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Nurse-in-Charge:</span>
                     <span class="text-xs font-extrabold text-blue-900">${patient.info.nurseInCharge}</span>
