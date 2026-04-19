@@ -62,7 +62,7 @@ const initialData = {
     // System Development Team
     developers: [
         { name: 'Mr. Muhammad Shah Ikmal Junaidi', role: 'System Developer' },
-        { name: 'Ms. Arisya Elyana Ahmad Fairuz', role: 'Project Manager' },
+        { name: 'Ms. Arisya Elyana Ahmad Fairuz', role: 'Project Coordinator & Architect' },
         { name: 'Ms. Nuraleeya Tahirah Mohammad', role: 'Clinical Workflow Analyst' },
         { name: 'Ms. Nurshazreen Aqeela Mat Zaib', role: 'Project Coordinator & Quality Lead' },
         { name: 'Ms. Siti Nurkhairina Amad Jupri', role: 'Clinical Workflow Designer' }

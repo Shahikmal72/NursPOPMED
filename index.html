@@ -70,6 +70,13 @@
         }
         .animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
@@ -243,7 +250,7 @@
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             </span>
-                            <input type="text" id="login-userid" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 text-sm" placeholder="Enter Clinical ID" required>
+                            <input type="text" id="login-userid" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 placeholder:text-slate-300 text-sm" placeholder="Enter Clinical ID" required>
                         </div>
                     </div>
                     <div class="space-y-1.5">
@@ -252,10 +259,14 @@
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                             </span>
-                            <input type="password" id="login-password" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 text-sm" placeholder="••••••••" required>
+                            <input type="password" id="login-password" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 placeholder:text-slate-300 text-sm" placeholder="••••••••" required>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-blue-900/20 transition-all active:scale-95 uppercase tracking-widest mt-2">Authorize Access</button>
+                    <div id="login-error-msg" class="hidden text-[10px] font-bold text-red-500 text-center animate-fade-in"></div>
+                    <button type="submit" id="login-btn" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-blue-900/20 transition-all active:scale-95 uppercase tracking-widest mt-2 flex items-center justify-center gap-2 group">
+                        <span>Authorize Access</span>
+                        <svg class="w-4 h-4 hidden group-[.loading]:block animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
                 </form>
                 
                 <div class="pt-4 border-t border-slate-100 text-center">
@@ -277,7 +288,7 @@
 
                 <h2 class="text-base font-black text-slate-900 tracking-tighter mb-4 uppercase flex items-center gap-2">
                     <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
-                    System Developers
+                    System Development Team
                 </h2>
                 
                 <div id="developer-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
@@ -1318,33 +1329,47 @@
         }
 
         // Form Handlers
-        document.getElementById('login-form').addEventListener('submit', (e) => {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('login-userid').value;
             const pass = document.getElementById('login-password').value;
-            if (login(id, pass)) {
-                const db = getDB();
-                const user = db.users.find(u => u.id === id);
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('login-error-msg');
+            const formBox = e.target.closest('.glass-panel');
+
+            // Show loading state
+            btn.classList.add('loading');
+            btn.disabled = true;
+            errorMsg.classList.add('hidden');
+            
+            // Add a small artificial delay for "smoothness" and to show the loading state
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            const authResult = login(id, pass);
+
+            if (authResult.success) {
+                const user = authResult.user;
                 
                 // Show personalized login greeting
                 const welcomeModal = document.createElement('div');
-                welcomeModal.className = 'fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[300] flex items-center justify-center p-6 animate-fade-in';
+                welcomeModal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-2xl z-[300] flex items-center justify-center p-6 animate-fade-in';
                 welcomeModal.innerHTML = `
                     <div class="bg-white rounded-[3rem] p-12 shadow-2xl max-w-sm w-full text-center transform animate-pop-in border border-white/20">
                         <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8">
                             <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                         </div>
-                        <h2 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter">Welcome Back,</h2>
+                        <h2 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter leading-none">Welcome Back,</h2>
                         <p class="text-xl font-extrabold text-blue-600 mb-6">${user.fullname || user.id.replace(/_/g, ' ')}</p>
                         <div class="space-y-4">
-                            <p class="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">Authorized as: ${user.role}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Authorized Clinical Role</p>
+                            <p class="text-xs font-bold text-slate-600 bg-slate-50 py-2 rounded-xl border border-slate-100">${user.role}</p>
                             <div class="pt-6">
                                 <div class="flex items-center justify-center gap-2">
-                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s"></div>
-                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                                    <div class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                                    <div class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                    <div class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
                                 </div>
-                                <p class="mt-4 text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Initializing Clinical Workspace...</p>
+                                <p class="mt-4 text-[9px] font-black text-blue-400 uppercase tracking-[0.3em]">Syncing Clinical Data...</p>
                             </div>
                         </div>
                     </div>
@@ -1353,11 +1378,28 @@
 
                 // Delay to show greeting before entering app
                 setTimeout(() => {
-                    welcomeModal.remove();
-                    showMainApp();
-                }, 2500);
+                    welcomeModal.classList.add('opacity-0');
+                    welcomeModal.style.transition = 'opacity 0.5s ease-out';
+                    setTimeout(() => {
+                        welcomeModal.remove();
+                        showMainApp();
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }, 500);
+                }, 2000);
             } else {
-                alert('Invalid Credentials');
+                // Show error state
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                errorMsg.innerText = authResult.message;
+                errorMsg.classList.remove('hidden');
+                
+                // Shake effect
+                formBox.classList.add('animate-shake');
+                setTimeout(() => formBox.classList.remove('animate-shake'), 500);
+                
+                // Haptic feedback if available
+                if (window.navigator.vibrate) window.navigator.vibrate(100);
             }
         });
 
