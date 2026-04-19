@@ -1,15 +1,14 @@
 // Initial Data for POPMED System
 const initialData = {
     users: [
-        { id: 'Arisya_Elyana', password: 'Arisya123', role: 'Staff Nurse' },
-        { id: 'Shah_Ikmal', password: 'Shah123', role: 'Staff Nurse' },
-        { id: 'Khairina_Jupri', password: 'Khairina123', role: 'Staff Nurse' },
-        { id: 'Shazreen_Arin', password: 'Arin123', role: 'Staff Nurse' },
-        { id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Staff Nurse' },
-        { id: 'Azri_Jalil', password: 'Azri123', role: 'Pharmacist' },
-        { id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Clinical Audit Officer' }, 
-        { id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Clinical Audit Officer' }, 
-        { id: 'Admin_ITD', password: 'Admin123', role: 'Information Technology Officer' }, 
+        { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Director of Nursing' },
+        { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Assistant Director of Nursing' },
+        { fullname: 'Ms. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Advanced Nursing Practitioner' },
+        { fullname: 'Ms. Shazreen Arin', id: 'Shazreen_Arin', password: 'Arin123', role: 'Advanced Nursing Practitioner' },
+        { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Advanced Nursing Practitioner' },
+        { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Clinical Pharmacist' },
+        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Clinical Audit Officer' }, 
+        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Clinical Audit Officer' }, 
     ],
     medications: {
         oral: [
@@ -73,16 +72,19 @@ const initialData = {
     ],
     // Clinical Faculty from Kulliyyah of Nursing (KON), IIUM
     doctors: [
-        'Assoc. Prof. Dr. Mohd Said Nurumal (Consultant)',
-        'Assoc. Prof. Dr. Muhammad Kamil Che Hasan (Consultant)',
-        'Assoc. Prof. Dr. Salizar Mohamed Ludin (Consultant)',
-        'Asst. Prof. Dr. Siti Zuhailah Abdullah (Specialist)',
-        'Asst. Prof. Dr. Patimah Abdul Wahiv (Specialist)',
-        'Asst. Prof. Dr. Santhna Letchmi Panduragan (Specialist)',
-        'Asst. Prof. Dr. Nik Noor Kaussar Nik Mohd Hatta (Specialist)',
-        'Asst. Prof. Dr. Azmir Ahmad (Specialist)',
-        'Asst. Prof. Dr. Mohamad Firdaus Mohamad Mohaidin (Specialist)',
-        'Asst. Prof. Dr. Muhammad Lokman Md. Isa (Specialist)'
+        'Assoc. Prof. Dr. Syamsul Ahmad Arifin',
+        'Dr. Mohd Azri Abd Jalil',
+        'Dr. Sarah Zulifli',
+        'Dr. Shidqiyyah Abd Hamid (Specialist)',
+        'Dr. Azmir Ahmad',
+        'Assoc. Prof. Dr. Siti Noorkhairina Binti Sowtali',
+        'Assoc. Prof. Dr. Sanisah Saidi'
+        'Prof. Dr. Mohd Said Nurumal',
+        'Prof. Dr. Salizar Mohamed Ludin',
+        'Prof. Dr. Azlina Daud'
+        'Prof. Dr. Siti Roshaidai'
+        'Assoc. Prof. Dr. Kamil Che Hassan'
+
     ],
     inventory: [], // Pharmacological Inventory
     patients: [], // Clinical Bed Units 1-25
