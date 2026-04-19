@@ -1,14 +1,14 @@
 // Initial Data for POPMED System
 const initialData = {
     users: [
-        { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Director of Nursing' },
-        { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Assistant Director of Nursing' },
-        { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
-        { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Advanced Nursing Practitioner' },
-        { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Clinical Pharmacist' },
-        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Clinical Audit Officer' }, 
-        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Clinical Audit Officer' }, 
+        { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Nurse' },
+        { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse' },
+        { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Doctor' },
+        { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Doctor' },
+        { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
+        { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Pharmacist' },
+        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Admin' }, 
+        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Admin' }, 
     ],
     medications: {
         oral: [
@@ -107,24 +107,27 @@ const initialData = {
     medicationProtocols: {
         // ANTIBIOTICS
         'Ceftriaxone 1g Injection': {
+            isLASA: true,
+            lasaNote: 'SOUNDS LIKE: Cefotaxime, Ceftazidime. VERIFY dosage and indication.',
             diluent: '0.9% Sodium Chloride or Sterile Water',
             volume: '10ml for Bolus, 50ml for Infusion',
             instructions: 'Reconstitute 1g vial with 10ml diluent. For IV infusion, further dilute in 50-100ml NS/D5W and administer over 30 minutes.',
             stability: '24 hours at room temperature (25°C)',
             he: {
-                reason: 'Broad-spectrum cephalosporin antibiotic for bacterial infections.',
-                sideEffects: 'Gastrointestinal distress (diarrhea), skin rash, phlebitis at injection site.',
+                reason: 'This is a strong antibiotic used to kill bacteria and treat serious infections in different parts of your body.',
+                sideEffects: 'You might experience loose stools (diarrhea), a mild skin rash, or some redness/soreness where the needle is placed.',
                 citation: 'British National Formulary (BNF 86)'
             }
         },
         'Vancomycin 500mg Injection': {
+            isHighAlert: true,
             diluent: '0.9% Sodium Chloride or 5% Dextrose',
             volume: '100ml to 250ml',
             instructions: 'Reconstitute with 10ml SWFI. Further dilute to a concentration not exceeding 5mg/ml. Administer via slow infusion over at least 60 minutes to mitigate Red Man Syndrome.',
             stability: 'Discard after 24 hours post-reconstitution',
             he: {
-                reason: 'Glycopeptide antibiotic for severe MRSA or multi-resistant infections.',
-                sideEffects: 'Red Man Syndrome (infusion-related flushing), ototoxicity, nephrotoxicity.',
+                reason: 'This is a specialized antibiotic used for very tough infections that other medicines cannot treat.',
+                sideEffects: 'Tell your nurse if you feel sudden warmth, itching, or redness on your upper body (flushing). It may also affect your ears or kidneys if not monitored.',
                 citation: 'MIMS Malaysia 2024'
             }
         },
@@ -162,6 +165,8 @@ const initialData = {
             }
         },
         'Metronidazole 500mg/100ml IV Infusion': {
+            isLASA: true,
+            lasaNote: 'SOUNDS LIKE: Metformin. VERIFY indication (Infection vs Diabetes).',
             diluent: 'Premixed Formulation',
             volume: '100ml',
             instructions: 'Administer via slow IV infusion over 30-60 minutes. Protect from refrigeration to avoid crystallization.',
@@ -186,24 +191,30 @@ const initialData = {
 
         // INSULINS
         'Insulin Actrapid (Soluble) SC': {
+            isHighAlert: true,
+            isLASA: true,
+            lasaNote: 'LOOKS LIKE: Other Insulin vials (e.g. Insulatard). CHECK LABEL COLOR.',
             diluent: 'Not Applicable (Ready-to-use)',
             volume: 'Units as per clinical prescription',
             instructions: 'Short-acting insulin. Administer 30 minutes pre-prandial. Validate capillary blood glucose (CBG) prior to administration.',
             stability: 'In-use vial stable at room temperature for 28 days',
             he: {
-                reason: 'Prandial glucose control by augmenting systemic insulin levels.',
-                sideEffects: 'Hypoglycemia (diaphoresis, hunger, tremors), lipodystrophy.',
+                reason: 'This is a fast-acting insulin used to lower your blood sugar after you eat a meal.',
+                sideEffects: 'Watch for signs of low blood sugar (hypoglycemia) like feeling shaky, sweaty, very hungry, or confused.',
                 citation: 'Diabetes Care Guidelines 2024'
             }
         },
         'Insulin Insulatard (NPH) SC': {
+            isHighAlert: true,
+            isLASA: true,
+            lasaNote: 'LOOKS LIKE: Other Insulin vials (e.g. Actrapid). CHECK LABEL COLOR.',
             diluent: 'Not Applicable (Ready-to-use)',
             volume: 'Units as per clinical prescription',
             instructions: 'Intermediate-acting insulin. Agitate vial gently until uniform suspension is achieved. Administer via subcutaneous route.',
             stability: 'In-use vial stable at room temperature for 28 days',
             he: {
-                reason: 'Basal glycemic control throughout the diurnal cycle.',
-                sideEffects: 'Hypoglycemia, weight gain, localized injection site reactions.',
+                reason: 'This is a slow-acting insulin that helps keep your blood sugar steady throughout the day and night.',
+                sideEffects: 'Low blood sugar, weight changes, or mild skin irritation where the medicine is injected.',
                 citation: 'IDF Clinical Practice Recommendations'
             }
         },
@@ -215,19 +226,20 @@ const initialData = {
             instructions: 'Maximum cumulative dose of 4g per 24 hours. Monitor hepatic function in chronic utilization.',
             stability: 'Stable at room temperature',
             he: {
-                reason: 'Non-opioid analgesic and antipyretic for pain and fever management.',
-                sideEffects: 'Rare: Hepatotoxicity (liver damage) in supratherapeutic doses.',
+                reason: 'This medicine is used to relieve mild to moderate pain and reduce a high fever.',
+                sideEffects: 'This medicine is usually very safe, but too much can cause liver problems. Do not take other medicines that also contain paracetamol.',
                 citation: 'WHO Pain Management Ladder'
             }
         },
         'Morphine 10mg/ml Injection (Controlled Drug)': {
+            isHighAlert: true,
             diluent: '0.9% Sodium Chloride or 5% Dextrose',
             volume: '10ml or greater',
             instructions: 'Dilute 10mg in at least 10ml NS. Administer slowly over 4-5 minutes. Continuous respiratory rate monitoring mandatory.',
             stability: 'Photosensitive; protect from light',
             he: {
-                reason: 'Potent opioid analgesic for severe acute or chronic pain.',
-                sideEffects: 'Respiratory depression, constipation, sedation/drowsiness.',
+                reason: 'This is a powerful painkiller used for severe pain when other medicines are not enough.',
+                sideEffects: 'You may feel very sleepy, constipated, or itchy. It can also slow down your breathing, which we will monitor closely.',
                 citation: 'BNF 86, Section 4.7.2'
             }
         },
@@ -237,19 +249,20 @@ const initialData = {
             instructions: 'Administer slow IV bolus at a rate ≤ 4mg/min to prevent ototoxicity.',
             stability: 'Photosensitive; protect from light',
             he: {
-                reason: 'Loop diuretic for management of pulmonary edema and fluid overload.',
-                sideEffects: 'Polyuria (frequent urination), dehydration, hypokalemia.',
+                reason: 'This is a "water pill" that helps your body get rid of extra fluid and reduces swelling (edema).',
+                sideEffects: 'You will likely need to urinate more often. It can also cause dehydration or low levels of minerals like potassium in your blood.',
                 citation: 'Heart Failure Society Guidelines'
             }
         },
         'Potassium Chloride (KCl) 7.5% Injection (High Alert)': {
+            isHighAlert: true,
             diluent: 'NS or D5W (CONTRAINDICATED UNDILUTED)',
             volume: '500ml or 1000ml',
             instructions: 'HIGH ALERT MEDICATION: Absolute requirement for dilution. Maximum concentration 40mmol/L. Infusion rate ≤ 10-20mmol/hr with continuous ECG monitoring.',
             stability: 'Ensure thorough homogenization post-addition to IV bag',
             he: {
-                reason: 'Electrolyte replacement therapy for clinical hypokalemia.',
-                sideEffects: 'Abdominal pain, nausea, fatal cardiac arrhythmias if administered rapidly.',
+                reason: 'This is a mineral supplement used to treat low potassium levels in your blood, which is important for your heart and muscles.',
+                sideEffects: 'It can cause stomach upset or nausea. If given too quickly, it can cause dangerous changes to your heartbeat.',
                 citation: 'Electrolyte Replacement Protocol 2024'
             }
         },
@@ -259,8 +272,8 @@ const initialData = {
             instructions: 'Reconstitute with 10ml NS. Administer over 2-5 minutes. For infusion, dilute in 100ml NS/D5W and administer over 15 minutes.',
             stability: '12 hours post-reconstitution',
             he: {
-                reason: 'Proton pump inhibitor (PPI) for peptic ulcer disease and GERD.',
-                sideEffects: 'Diarrhea, arthralgia (joint pain), flatulence.',
+                reason: 'This medicine helps reduce the amount of acid your stomach makes, which helps heal ulcers and treat severe heartburn.',
+                sideEffects: 'You might have some mild diarrhea, joint pain, or feel a bit gassy.',
                 citation: 'MIMS Malaysia Online 2024'
             }
         },
@@ -268,19 +281,33 @@ const initialData = {
             diluent: 'Not Applicable', volume: 'Not Applicable',
             instructions: 'Administer with food to mitigate gastric mucosal irritation. Limit to 1.2g/day unless clinically supervised.',
             stability: 'Stable',
-            he: { reason: 'Non-steroidal anti-inflammatory drug (NSAID) for inflammation and analgesia.', sideEffects: 'Epigastric pain, dyspepsia (heartburn), nausea.', citation: 'FDA Consumer Medication Guide' }
+            he: { 
+                reason: 'This medicine reduces pain and swelling (inflammation).', 
+                sideEffects: 'It can cause stomach ache or heartburn. Taking it with food helps prevent this.', 
+                citation: 'FDA Consumer Medication Guide' 
+            }
         },
         'Metformin 500mg Tablet': {
+            isLASA: true,
+            lasaNote: 'SOUNDS LIKE: Metronidazole. VERIFY indication (Diabetes vs Infection).',
             diluent: 'Not Applicable', volume: 'Not Applicable',
             instructions: 'Administer with meals to reduce gastrointestinal side effects. Regularly monitor renal function (eGFR).',
             stability: 'Stable',
-            he: { reason: 'Biguanide antihyperglycemic for Type 2 Diabetes Mellitus.', sideEffects: 'Metallic taste, diarrhea, nausea, lactic acidosis (rare).', citation: 'ADA Standards of Medical Care 2024' }
+            he: { 
+                reason: 'This medicine helps lower your blood sugar levels by helping your body use insulin better.', 
+                sideEffects: 'You might have a metallic taste in your mouth, or feel some stomach upset like diarrhea or nausea when you first start.', 
+                citation: 'ADA Standards of Medical Care 2024' 
+            }
         },
         'Amlodipine 5mg Tablet': {
             diluent: 'Not Applicable', volume: 'Not Applicable',
             instructions: 'Monitor blood pressure parameters. Avoid concurrent consumption of grapefruit juice.',
             stability: 'Stable',
-            he: { reason: 'Calcium channel blocker for essential hypertension and angina pectoris.', sideEffects: 'Peripheral edema (swelling), dizziness, facial flushing.', citation: 'AHA Hypertension Guidelines' }
+            he: { 
+                reason: 'This medicine helps lower your blood pressure and prevents chest pain (angina) by relaxing your blood vessels.', 
+                sideEffects: 'Some people notice swelling in their ankles, feel a bit dizzy, or have a warm/flushed face.', 
+                citation: 'AHA Hypertension Guidelines' 
+            }
         },
         'Simvastatin 20mg Tablet': {
             diluent: 'Not Applicable', volume: 'Not Applicable',
@@ -289,18 +316,44 @@ const initialData = {
             he: { reason: 'HMG-CoA reductase inhibitor (statin) for hyperlipidemia.', sideEffects: 'Myalgia (muscle pain), weakness, hepatic transaminase elevation.', citation: 'ATP IV Cholesterol Guidelines' }
         },
         'Heparin 5,000 units/ml Injection': {
+            isHighAlert: true,
             diluent: 'Not Applicable', volume: 'Not Applicable',
             instructions: 'Administer SC in abdominal adipose tissue. Avoid site massage. Monitor APTT for IV therapeutic use.',
             stability: 'Stable',
             he: { reason: 'Anticoagulant for prophylaxis and treatment of thromboembolic disorders.', sideEffects: 'Ecchymosis (bruising), hemorrhage (bleeding), injection site irritation.', citation: 'ACCP Antithrombotic Guidelines' }
         },
         'Enoxaparin 40mg/0.4ml Pre-filled Syringe': {
+            isHighAlert: true,
             diluent: 'Not Applicable', volume: 'Not Applicable',
             instructions: 'Administer SC. Do not expel the nitrogen air bubble prior to injection.',
             stability: 'Stable',
             he: { reason: 'Low molecular weight heparin (LMWH) for DVT prophylaxis.', sideEffects: 'Hemorrhage, anemia, localized pain.', citation: 'Clinical Practice Guideline (LMWH)' }
         },
+        'Pethidine 50mg/ml Injection (Controlled Drug)': {
+            isHighAlert: true,
+            diluent: '0.9% Sodium Chloride', volume: '10ml',
+            instructions: 'HIGH ALERT: Opioid analgesic. Reconstitute and administer slowly over 3-5 minutes. Respiratory monitoring required.',
+            stability: 'Stable',
+            he: { reason: 'Strong painkiller for moderate to severe pain.', sideEffects: 'Drowsiness, nausea, dizziness, respiratory depression.', citation: 'BNF 86' }
+        },
+        'Atropine 0.5mg/ml Injection': {
+            isHighAlert: true,
+            diluent: 'Undiluted', volume: 'Not Applicable',
+            instructions: 'EMERGENCY: Rapid IV bolus for symptomatic bradycardia. Monitor HR and rhythm.',
+            stability: 'Stable',
+            he: { reason: 'Increases heart rate during clinical bradycardia.', sideEffects: 'Dry mouth, blurred vision, tachycardia.', citation: 'ACLS 2024' }
+        },
+        'Adenosine 6mg/2ml Injection': {
+            isHighAlert: true,
+            diluent: 'Undiluted (Rapid Flush)', volume: 'Not Applicable',
+            instructions: 'EMERGENCY: Rapid IV push (1-2 seconds) followed immediately by 20ml NS flush. Continuous ECG required.',
+            stability: 'Stable',
+            he: { reason: 'Used to restore normal heart rhythm in certain types of fast heartbeats.', sideEffects: 'Chest pressure, facial flushing, brief period of asystole.', citation: 'ACLS 2024' }
+        },
         'Adrenaline 1mg/ml (1:1000) Injection': {
+            isHighAlert: true,
+            isLASA: true,
+            lasaNote: 'SOUNDS LIKE: Ephedrine. DO NOT CONFUSE. Adrenaline is much more potent.',
             diluent: '0.9% Sodium Chloride for infusion', volume: '50ml',
             instructions: 'EMERGENCY PROTOCOL: IM for anaphylaxis, IV for cardiac arrest (dilution 1:10,000). Continuous hemodynamic monitoring required.',
             stability: 'Discard if solution exhibits brownish/pinkish discoloration',
@@ -347,6 +400,9 @@ const initialData = {
             he: { reason: 'Anticholinergic for treatment of symptomatic bradycardia and certain poisonings.', sideEffects: 'Xerostomia (dry mouth), blurred vision, tachycardia.', citation: 'ACLS 2024' }
         },
         'Dopamine 200mg/5ml Injection': {
+            isHighAlert: true,
+            isLASA: true,
+            lasaNote: 'SOUNDS LIKE: Dobutamine. VERIFY dosage and clinical indication.',
             diluent: '0.9% Sodium Chloride or 5% Dextrose', volume: '250ml to 500ml',
             instructions: 'HIGH ALERT: Central venous access preferred. Utilize infusion pump. Continuous BP and HR monitoring mandatory.',
             stability: '24 hours in 5% Dextrose',
@@ -357,12 +413,14 @@ const initialData = {
             }
         },
         'Noradrenaline 4mg/4ml Injection': {
+            isHighAlert: true,
             diluent: '5% Dextrose (Standard)', volume: '50ml or 250ml',
             instructions: 'HIGH ALERT: Continuous infusion via pump. Hemodynamic monitoring every 2-5 minutes during titration.',
             stability: 'Photosensitive; protect from light',
             he: { reason: 'Alpha-adrenergic agonist vasopressor for septic shock management.', sideEffects: 'Severe hypertension, bradycardia, peripheral ischemia.', citation: 'Surviving Sepsis Campaign' }
         },
         'Amiodarone 150mg/3ml Injection': {
+            isHighAlert: true,
             diluent: '5% Dextrose EXCLUSIVELY', volume: '100ml to 250ml',
             instructions: 'Contraindicated with 0.9% NaCl. Utilize non-PVC administration sets and inline filters if available. Monitor ECG and BP.',
             stability: 'Stable in 5% Dextrose',
@@ -395,12 +453,14 @@ const initialData = {
             he: { reason: 'Dopamine antagonist prokinetic and antiemetic.', sideEffects: 'Drowsiness, restlessness, extrapyramidal symptoms.', citation: 'BNF 86' }
         },
         'Midazolam 5mg/5ml Injection (Sedative)': {
+            isHighAlert: true,
             diluent: '0.9% Sodium Chloride or 5% Dextrose', volume: 'Variable',
             instructions: 'HIGH ALERT: Continuous respiratory rate and oxygen saturation monitoring mandatory.',
             stability: 'Stable', 
             he: { reason: 'Benzodiazepine for conscious sedation and anxiolysis.', sideEffects: 'Respiratory depression, sedation, anterograde amnesia.', citation: 'Clinical Sedation Guidelines' }
         },
         'Magnesium Sulphate (MgSO4) 50% Injection': {
+            isHighAlert: true,
             diluent: '0.9% Sodium Chloride or 5% Dextrose', volume: '100ml to 250ml',
             instructions: 'HIGH ALERT: Monitor deep tendon reflexes (DTR), RR, and urine output. Frequent BP monitoring required.',
             stability: 'Stable',
@@ -537,17 +597,24 @@ function initializeDB() {
 
         allMedNames.forEach(name => {
             // Check if item exists in inventory (fuzzy check to avoid duplicates)
-            const exists = existingDB.inventory.find(i => i.name === name || i.name.toLowerCase().replace(/tab|tablet|cap|capsule|inj|injection|iv/g, '').trim() === name.toLowerCase().replace(/tab|tablet|cap|capsule|inj|injection|iv/g, '').trim());
+            const exists = existingDB.inventory.find(i => i.name === name);
             
             if (!exists) {
+                const isControlled = name.toLowerCase().includes('controlled drug') || name.toLowerCase().includes('morphine') || name.toLowerCase().includes('pethidine');
+                const isHighAlert = name.toLowerCase().includes('high alert') || name.toLowerCase().includes('potassium') || name.toLowerCase().includes('insulin');
+                
                 existingDB.inventory.push({
                     id: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                     name,
-                    batch: `BATCH-${Math.floor(Math.random() * 9000) + 1000}`,
-                    expiry: new Date(Date.now() + (Math.random() * 180 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+                    barcode: `BC-${Math.floor(Math.random() * 9000000) + 1000000}`,
+                    batch: `LOT-${Math.floor(Math.random() * 9000) + 1000}`,
+                    expiry: new Date(Date.now() + (Math.random() * 365 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
                     quantity: 500,
+                    parLevel: 50,
                     temperature: (22 + (Math.random() * 4 - 2)).toFixed(1),
                     unusable: false,
+                    isControlled: isControlled,
+                    isHighAlert: isHighAlert,
                     isIVSolution: initialData.ivSolutions.includes(name)
                 });
             }
@@ -557,7 +624,7 @@ function initializeDB() {
     }
 
     if (!existingDB) { 
-        // Create initial inventory
+        // Create initial inventory with enhanced metadata
         const allMedNames = [
             ...initialData.medications.oral,
             ...initialData.medications.iv,
@@ -566,32 +633,46 @@ function initializeDB() {
             ...initialData.medications.others
         ];
 
-        initialData.inventory = allMedNames.map((name, index) => ({
-            id: `INV-${index + 1000}`,
-            name,
-            batch: `BATCH-${Math.floor(Math.random() * 9000) + 1000}`,
-            expiry: new Date(Date.now() + (Math.random() * 180 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
-            quantity: 500,
-            temperature: (22 + (Math.random() * 4 - 2)).toFixed(1),
-            unusable: false
-        }));
+        initialData.inventory = allMedNames.map((name, index) => {
+            const isControlled = name.toLowerCase().includes('controlled drug') || name.toLowerCase().includes('morphine') || name.toLowerCase().includes('pethidine');
+            const isHighAlert = name.toLowerCase().includes('high alert') || name.toLowerCase().includes('potassium') || name.toLowerCase().includes('insulin');
+            
+            return {
+                id: `INV-${index + 1000}`,
+                name,
+                barcode: `BC-${1000000 + index}`,
+                batch: `LOT-${Math.floor(Math.random() * 9000) + 1000}`,
+                expiry: new Date(Date.now() + (Math.random() * 365 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+                quantity: 500,
+                parLevel: 50,
+                temperature: (22 + (Math.random() * 4 - 2)).toFixed(1),
+                unusable: false,
+                isControlled: isControlled,
+                isHighAlert: isHighAlert
+            };
+        });
 
         initialData.ivSolutions.forEach((name, index) => {
             initialData.inventory.push({
                 id: `INV-IV-${index + 1000}`,
                 name,
-                batch: `BATCH-IV-${Math.floor(Math.random() * 9000) + 1000}`,
-                expiry: new Date(Date.now() + (Math.random() * 180 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+                barcode: `BC-IV-${2000000 + index}`,
+                batch: `LOT-IV-${Math.floor(Math.random() * 9000) + 1000}`,
+                expiry: new Date(Date.now() + (Math.random() * 365 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
                 quantity: 200,
+                parLevel: 20,
                 temperature: (22 + (Math.random() * 4 - 2)).toFixed(1),
                 unusable: false,
-                isIVSolution: true
+                isIVSolution: true,
+                isControlled: false,
+                isHighAlert: false
             });
         });
 
         const firstNames = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'];
         const lastNames = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'];
-        const nurses = ['Staff Nurse Aisyah', 'Staff Nurse Fatimah', 'Staff Nurse Umar', 'Staff Nurse Khadijah', 'Staff Nurse Ali'];
+        const nurses = ['Nurse Arisya', 'Nurse Shah', 'Nurse Leeya'];
+        const commonAllergies = ['Penicillin', 'Sulfa Drugs', 'Aspirin', 'NSAIDs', 'None (NKDA)'];
 
         const diagnoses = [
             'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
@@ -603,13 +684,14 @@ function initializeDB() {
             'Acute Exacerbation of Bronchial Asthma (AEBA)'
         ];
 
-        // Initialize patients (Beds 1-25) with polypharmacy (up to 7 meds)
+        // Initialize patients (Beds 1-25) with polypharmacy and BCMA readiness
         for (let i = 1; i <= 25; i++) {
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
             const doctor = initialData.doctors[Math.floor(Math.random() * initialData.doctors.length)];
             const nurse = nurses[Math.floor(Math.random() * nurses.length)];
             const diagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
+            const allergy = commonAllergies[Math.floor(Math.random() * commonAllergies.length)];
             
             // Polypharmacy: Generate 4-7 medications
             const medCount = Math.floor(Math.random() * 4) + 4; // 4 to 7
@@ -618,6 +700,8 @@ function initializeDB() {
             
             for(let m=0; m < medCount; m++) {
                 const medName = shuffledMeds[m];
+                const invItem = initialData.inventory.find(inv => inv.name === medName);
+                
                 let route = 'Oral (PO)';
                 if (initialData.medications.iv.includes(medName)) route = 'Intravenous (IV)';
                 if (initialData.medications.injection.includes(medName)) route = 'Subcutaneous (SC)';
@@ -626,7 +710,8 @@ function initializeDB() {
                 patientMeds.push({
                     id: `MED-${Date.now()}-${i}-${m}`,
                     name: medName,
-                    dose: medName.includes('mg') ? medName.split(' ').pop().replace('Tab', '').replace('Cap', '').replace('Inj', '') : '1 unit',
+                    barcode: invItem ? invItem.barcode : `BC-UNK-${Date.now()}`,
+                    dose: medName.includes('mg') ? medName.split(' ').filter(word => word.includes('mg'))[0] || '1 unit' : '1 unit',
                     route: route,
                     frequency: 'BD',
                     timeDue: new Date(Date.now() + (Math.random() * 24 * 60 * 60 * 1000)).toISOString(),
@@ -648,6 +733,7 @@ function initializeDB() {
                     doctor: doctor,
                     nurseInCharge: nurse,
                     diagnosis: diagnosis,
+                    allergies: allergy,
                     clinicalProgress: 'Patient is clinically stable. Vital signs are within normal limits (WNL). Wound site shows healthy granulation tissue. Plan for step-down oral antibiotics.',
                     diagnosticResults: {
                         woundImage: 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&q=80&w=400',

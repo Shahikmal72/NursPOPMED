@@ -57,58 +57,172 @@ setInterval(() => {
     }
 }, 30000);
 
-window.dispenseMedication = function(bedNumber, medId) {
+/**
+ * BCMA Unit 2: Point-of-Care Medication Administration
+ * Simplified Workflow: Scan Patient -> View Due -> Scan Drug -> Administer
+ */
+
+window.initiateBCMA = function(bedNumber) {
     const db = getDB();
     const patient = db.patients.find(p => p.bedNumber === bedNumber);
     if (!patient) return;
 
-    const medication = patient.medications.find(m => m.id === medId);
-    if (!medication) return;
+    // Simulation: Scan Patient Wristband
+    const scannedMRN = prompt(`[BCMA SCANNER] Please scan Patient Wristband (MRN) for Bed ${bedNumber}:`);
+    
+    if (!scannedMRN) return;
 
-    // Deduct from inventory
-    const inventoryItem = db.inventory.find(item => item.name === medication.name);
-    if (!inventoryItem || inventoryItem.quantity <= 0) {
-        showNotification(`Insufficient stock for ${medication.name}`, 'error');
+    if (scannedMRN.toUpperCase() !== patient.info.mrn) {
+        showNotification('CRITICAL STOP: MRN Mismatch! Wrong Patient identified.', 'error');
+        generateLog('BCMA_FAILURE', currentUser.id, `WRONG PATIENT: Scanned ${scannedMRN} for Bed ${bedNumber} (Expected: ${patient.info.mrn})`);
         return;
     }
-    inventoryItem.quantity -= 1;
 
-    medication.status = 'Dispensed';
-    medication.timeDispensed = new Date().toISOString();
-    medication.nurseId = currentUser.id;
-
-    updateDB(db);
-    generateLog('MED_DISPENSED', currentUser.id, `Dispensed ${medication.name} (${medication.dose}) for Bed ${bedNumber}`);
-    
-    // Refresh UI components to clear safety alerts immediately
-    renderCabinet2();
-    renderAlerts();
-    updateDashboardStats();
-    
-    showNotification(`Dispensed ${medication.name} successfully`, 'success');
+    // Patient Identity Verified
+    showNotification('BCMA: Patient Identity Verified.', 'success');
+    openPatientBCMAModal(bedNumber);
 };
 
-window.administerMedication = function(bedNumber, medId) {
+function openPatientBCMAModal(bedNumber) {
     const db = getDB();
     const patient = db.patients.find(p => p.bedNumber === bedNumber);
-    if (!patient) return;
+    
+    // Create a specialized BCMA workflow modal
+    const modal = document.createElement('div');
+    modal.id = 'bcma-workflow-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[400] flex items-center justify-center p-4';
+    
+    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed');
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20">
+            <!-- Header -->
+            <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-8 text-white relative">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-300 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                Patient Identity Verified
+                            </span>
+                        </div>
+                        <h2 class="text-3xl font-black tracking-tighter">${patient.info.name}</h2>
+                        <p class="text-blue-200 font-bold uppercase tracking-widest text-xs mt-1">Bed ${bedNumber} • ${patient.info.mrn} • Allergy: <span class="text-red-300">${patient.info.allergies}</span></p>
+                    </div>
+                    <button onclick="this.closest('#bcma-workflow-modal').remove()" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
 
+            <div class="p-8">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Medications Due for Administration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${medicationsDue.length === 0 ? `
+                        <div class="col-span-2 py-20 text-center opacity-30">
+                            <p class="text-lg font-bold uppercase tracking-widest">No medications due at this time.</p>
+                        </div>
+                    ` : medicationsDue.map(med => {
+                        const statusColor = getMedicationStatus(med);
+                        const isDispensed = med.status === 'Dispensed';
+                        
+                        return `
+                            <div class="p-6 rounded-3xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-xl transition-all group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-xl font-black text-slate-900">${med.name}</p>
+                                        <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-1">${med.dose} • ${med.route} • ${med.frequency}</p>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                        statusColor === 'Red' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                    }">${med.status}</span>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                    <div class="text-[10px] font-bold text-slate-400">
+                                        <p class="uppercase tracking-tighter">Scheduled Time</p>
+                                        <p class="text-slate-600">${formatDateTime(med.timeDue)}</p>
+                                    </div>
+                                    <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
+                                        ONE-CLICK ADMINISTER
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 p-6 border-t border-slate-100 flex justify-between items-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">eMAR - Electronic Medication Administration Record</p>
+                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Authorized by: ${currentUser.fullname}</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+window.handleOneClickAdminister = function(bedNumber, medId) {
+    const db = getDB();
+    const patient = db.patients.find(p => p.bedNumber === bedNumber);
     const medication = patient.medications.find(m => m.id === medId);
-    if (!medication) return;
 
-    medication.status = 'Administered';
-    medication.timeAdministered = new Date().toISOString();
+    // 1. Scan Medication Barcode
+    const scannedMedCode = prompt(`[BCMA SCANNER] Please scan Medication Barcode for: ${medication.name}`);
+    if (!scannedMedCode) return;
 
-    updateDB(db);
-    generateLog('MED_ADMINISTERED', currentUser.id, `Administered ${medication.name} to Bed ${bedNumber}`);
-    
-    // Refresh UI components to clear safety alerts immediately
-    renderCabinet2();
-    renderAlerts();
-    updateDashboardStats();
-    
-    showNotification(`${medication.name} marked as administered`, 'success');
+    // 2. Run 5 Rights Verification Engine
+    const verification = validate5Rights(patient, medication, patient.info.mrn, scannedMedCode);
+
+    if (verification.criticalStop) {
+        showNotification(`SAFETY ALERT: ${verification.drug.message || verification.patient.message}`, 'error');
+        generateLog('CLINICAL_STOP', currentUser.id, `SAFETY ALERT: ${verification.drug.message || verification.patient.message} (Bed: ${bedNumber}, Drug: ${medication.name})`);
+        return;
+    }
+
+    if (!verification.isAllValid) {
+        if (!confirm(`CLINICAL WARNING: ${verification.time.message || 'Verification issues detected.'} Do you want to proceed with administration anyway?`)) {
+            return;
+        }
+    }
+
+    // 3. Safety Alert: High Alert or LASA
+    const protocol = db.medicationProtocols[medication.name];
+    if (protocol && (protocol.isHighAlert || protocol.isLASA)) {
+        const type = protocol.isHighAlert ? 'HIGH_ALERT' : 'LASA';
+        const details = protocol.isLASA ? protocol.lasaNote : 'HIGH ALERT: Second independent verification of dosage and pump settings mandatory.';
+        
+        showClinicalSafetyAlert(medication.name, type, details, () => {
+            // Proceed with administration after safety acknowledgement
+            processAdministration(db, medication, bedNumber);
+        });
+        return;
+    }
+
+    // Standard Administration
+    processAdministration(db, medication, bedNumber);
 };
+
+function processAdministration(db, medication, bedNumber) {
+    // 4. One-Click Administration
+    triggerDrawerSimulation(() => {
+        medication.status = 'Administered';
+        medication.timeAdministered = new Date().toISOString();
+        medication.nurseId = currentUser.id;
+
+        updateDB(db);
+        generateLog('MED_ADMINISTERED', currentUser.id, `BCMA VERIFIED: Administered ${medication.name} to Bed ${bedNumber}`);
+        
+        showNotification(`${medication.name} administered successfully. eMAR updated.`, 'success');
+        
+        // Remove the BCMA modal and refresh dashboard
+        const bcmaModal = document.getElementById('bcma-workflow-modal');
+        if (bcmaModal) bcmaModal.remove();
+        updateDashboard();
+    }, "BCMA Unit 2: Administering", `Drawer Unlocked. Please administer ${medication.name} to the patient.`);
+}
 
 window.promptUpdateTime = function(bedNumber, medId, currentTime) {
     if (!isStaffNurse()) {
@@ -204,53 +318,40 @@ function renderCabinet2() {
         
         let medListHtml = '';
         if (patient.occupied) {
-            patient.medications.forEach(med => {
-                const statusColor = getMedicationStatus(med);
-                const colorClass = statusColor === 'Green' ? 'bg-green-50 text-green-700 border-green-100' : 
-                                  statusColor === 'Red' ? 'bg-red-50 text-red-700 border-red-100' : 
-                                  'bg-amber-50 text-amber-700 border-amber-100';
-                
-                medListHtml += `
-                    <div class="mt-2 p-3 border rounded-2xl ${colorClass} transition-all">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <p class="text-[11px] font-extrabold leading-tight">${med.name}</p>
-                                    <button onclick="showMedInfo('${med.name}')" class="text-[9px] bg-white/50 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter hover:bg-blue-100 transition-colors">HE</button>
-                                </div>
-                                <p class="text-[9px] font-bold opacity-60 uppercase tracking-tighter">${med.dose} • ${formatDateTime(med.timeDue)}</p>
-                                
-                                ${med.status === 'Pending' ? `
-                                    <div class="mt-2 flex items-center gap-2">
-                                        ${isStaffNurse() ? `
-                                            <button onclick="promptUpdateTime(${patient.bedNumber}, '${med.id}', '${med.timeDue}')" class="p-1 bg-white/50 rounded-lg hover:bg-white text-blue-600 transition-all" title="Adjust Time">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                            <div class="flex gap-1 ml-2">
-                                ${med.status === 'Pending' ? `<button onclick="handleDispense(${patient.bedNumber}, '${med.id}')" class="p-1.5 bg-white/80 rounded-lg shadow-sm hover:bg-white text-blue-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg></button>` : ''}
-                                ${med.status === 'Dispensed' ? `<button onclick="handleAdminister(${patient.bedNumber}, '${med.id}')" class="p-1.5 bg-green-500 rounded-lg shadow-sm hover:bg-green-600 text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></button>` : ''}
-                            </div>
-                        </div>
+            // eMAR Summary for the bed card
+            const meds = patient.medications;
+            const administered = meds.filter(m => m.status === 'Administered').length;
+            const pending = meds.filter(m => m.status === 'Pending' || m.status === 'Dispensed').length;
+
+            medListHtml = `
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="p-2 bg-green-50 rounded-xl border border-green-100 text-center">
+                        <p class="text-[8px] font-black text-green-600 uppercase tracking-widest">Administered</p>
+                        <p class="text-lg font-black text-green-700">${administered}</p>
                     </div>
-                `;
-            });
+                    <div class="p-2 bg-amber-50 rounded-xl border border-amber-100 text-center">
+                        <p class="text-[8px] font-black text-amber-600 uppercase tracking-widest">Due/Pending</p>
+                        <p class="text-lg font-black text-amber-700">${pending}</p>
+                    </div>
+                </div>
+                <button onclick="initiateBCMA(${patient.bedNumber})" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group">
+                    <svg class="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    BCMA SCANNER
+                </button>
+            `;
         }
 
         bedCard.innerHTML = `
             <div class="flex justify-between items-start mb-4">
                 <div>
-                    <span class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em]">Bed Unit</span>
+                    <span class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em]">Clinical Bed Unit</span>
                     <h3 class="font-black text-3xl text-blue-900 leading-none">${patient.bedNumber}</h3>
                 </div>
                 <div class="flex gap-2">
                     ${patient.occupied ? `
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
                             <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase pr-1">Active</span>
+                            <span class="text-[8px] font-black text-slate-500 uppercase pr-1">Inpatient</span>
                         </div>
                         <button onclick="openPatientModal(${patient.bedNumber})" class="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
                     ` : ''}
@@ -265,20 +366,15 @@ function renderCabinet2() {
                         <div class="flex-grow">
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Assigned Patient</p>
                             <p class="text-sm font-extrabold text-gray-900 truncate">${patient.info.name}</p>
+                            <p class="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">${patient.info.mrn}</p>
                         </div>
                     </div>
-                    <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex justify-between">
-                            Cycle Medications
-                            <span class="text-blue-500">${patient.medications.length} total</span>
-                        </p>
-                        <div class="max-h-32 overflow-y-auto custom-scrollbar pr-1">
-                            ${medListHtml || '<p class="text-[10px] text-gray-400 italic text-center py-2">No active orders</p>'}
-                        </div>
-                    </div>
+                    
+                    ${medListHtml}
+
                     <div class="pt-3 flex justify-between items-center border-t border-slate-100">
                         <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Verified by</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Clinical Nurse</span>
                             <span class="text-[9px] font-black text-blue-600">${patient.info.nurseInCharge}</span>
                         </div>
                         <button onclick="handleTerminate(${patient.bedNumber})" class="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter hover:bg-red-100 transition-all">Archive Unit</button>
@@ -289,7 +385,7 @@ function renderCabinet2() {
                         <svg class="w-8 h-8 text-slate-300 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </div>
                     <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] group-hover:text-blue-600 mb-4">Unit Available</p>
-                    <button onclick="registerNewPatient(${patient.bedNumber})" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transform active:scale-95 transition-all shadow-lg shadow-blue-900/20">Register Patient</button>
+                    <button onclick="registerNewPatient(${patient.bedNumber})" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transform active:scale-95 transition-all shadow-lg shadow-blue-900/20">Register Admission</button>
                 </div>
             `}
         `;
@@ -672,10 +768,20 @@ function renderAuditTrails() {
         div.className = 'p-4 md:p-6 hover:bg-blue-50/30 transition-colors group border-b border-slate-50';
         
         let actionBadgeColor = 'bg-gray-100 text-gray-600';
-        if (log.action.includes('DISPENSED')) actionBadgeColor = 'bg-green-100 text-green-700';
-        if (log.action.includes('ADMINISTERED')) actionBadgeColor = 'bg-blue-100 text-blue-700';
-        if (log.action.includes('ISSUE')) actionBadgeColor = 'bg-red-100 text-red-700';
-        if (log.action.includes('USER')) actionBadgeColor = 'bg-yellow-100 text-yellow-700';
+        let logCategory = 'SYSTEM';
+        
+        if (log.action.includes('DISPENSED')) {
+            actionBadgeColor = 'bg-green-100 text-green-700';
+            logCategory = 'PHARMACY';
+        }
+        if (log.action.includes('ADMINISTERED')) {
+            actionBadgeColor = 'bg-blue-100 text-blue-700';
+            logCategory = 'eMAR';
+        }
+        if (log.action.includes('ISSUE') || log.action.includes('FAILURE') || log.action.includes('STOP')) {
+            actionBadgeColor = 'bg-red-100 text-red-700';
+            logCategory = 'SAFETY';
+        }
 
         div.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
@@ -688,11 +794,11 @@ function renderAuditTrails() {
                     ${log.nurseId}
                 </div>
                 <div class="md:col-span-2 flex items-center justify-between md:block">
-                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400">Action</span>
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-tighter ${actionBadgeColor}">${log.action.replace(/_/g, ' ')}</span>
+                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400">Domain</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-tighter ${actionBadgeColor}">${logCategory}</span>
                 </div>
                 <div class="md:col-span-5 text-[11px] md:text-xs font-medium text-gray-600 italic group-hover:text-blue-900 transition-colors flex flex-col md:block">
-                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400 mb-1 not-italic">Details</span>
+                    <span class="md:hidden uppercase tracking-widest text-[8px] text-gray-400 mb-1 not-italic">Clinical Narrative</span>
                     ${log.details}
                 </div>
             </div>
