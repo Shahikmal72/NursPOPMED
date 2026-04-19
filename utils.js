@@ -194,19 +194,110 @@ function showNotification(message, type = 'info') {
 }
 
 /**
- * Nurse Digital Stamp / Signature Generator
+ * Medication Clinical Database for Health Education (HE)
+ * Includes clinical purpose, instructions, side effects, and Shariah compliance
  */
-function generateNurseStamp(name, role) {
+const medicationInfo = {
+    "Insulin": {
+        purpose: "To control blood glucose (sugar) levels in diabetes mellitus. It helps move sugar from the blood into your cells for energy.",
+        instructions: "Inject subcutaneously (under the skin) as prescribed. Rotate injection sites. **IMPORTANT: Do not skip meals after injection to prevent low blood sugar.**",
+        sideEffects: ["Hypoglycemia (Low blood sugar)", "Dizziness or shakiness", "Sweating", "Hunger", "Irritability"],
+        highAlert: true,
+        containsPorcine: false
+    },
+    "Heparin": {
+        purpose: "An anticoagulant (blood thinner) used to prevent the formation of harmful blood clots in the blood vessels.",
+        instructions: "Administer as prescribed via injection. Monitor for any unusual bleeding or bruising. Use a soft toothbrush.",
+        sideEffects: ["Unusual bleeding", "Easy bruising", "Pain at injection site"],
+        highAlert: true,
+        containsPorcine: true
+    },
+    "Paracetamol": {
+        purpose: "Used to treat mild to moderate pain (from headaches, menstrual periods, toothaches, backaches, osteoarthritis, or cold/flu aches and pains) and to reduce fever.",
+        instructions: "Take orally after food as prescribed. Do not exceed the maximum daily dose (4g).",
+        sideEffects: ["Rare allergic reactions", "Liver toxicity only if maximum dose exceeded"],
+        highAlert: false,
+        containsPorcine: false
+    },
+    "Aspirin": {
+        purpose: "Used to reduce fever and relieve mild to moderate pain. Also used as a blood thinner to prevent heart attacks and strokes.",
+        instructions: "Take with food or a full glass of water to avoid stomach upset.",
+        sideEffects: ["Stomach upset", "Heartburn", "Easy bruising/bleeding"],
+        highAlert: false,
+        containsPorcine: false
+    },
+    "Ceftriaxone": {
+        purpose: "A broad-spectrum antibiotic used to treat various bacterial infections.",
+        instructions: "Must be administered via injection (IV or IM). Complete the full course even if feeling better.",
+        sideEffects: ["Diarrhea", "Nausea", "Rash at injection site"],
+        highAlert: false,
+        containsPorcine: false
+    },
+    "Metformin": {
+        purpose: "An oral diabetes medicine that helps control blood sugar levels.",
+        instructions: "Take with meals to reduce stomach or bowel side effects.",
+        sideEffects: ["Nausea", "Stomach upset", "Metallic taste in mouth"],
+        highAlert: false,
+        containsPorcine: false
+    },
+    "Warfarin": {
+        purpose: "A blood thinner used to treat or prevent blood clots in veins, arteries, lungs, or heart.",
+        instructions: "Take at the same time every day. Regular blood tests (INR) are mandatory.",
+        sideEffects: ["Bleeding", "Bruising", "Red or brown urine"],
+        highAlert: true,
+        containsPorcine: false
+    }
+};
+
+/**
+ * Helper: Generate High-Alert Warning Section
+ */
+function generateHighAlertWarning(info) {
+    if (!info.highAlert) return "";
+
     return `
-        <div class="nurse-stamp no-print" style="border: 2px solid #16a34a; padding: 8px; display: inline-block; border-radius: 12px; background: rgba(22, 163, 74, 0.05); margin-top: 8px; min-width: 150px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="color: #16a34a;">
-                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <p style="font-size: 8px; font-weight: 900; color: #16a34a; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">Verified Administration</p>
-                    <p style="font-size: 11px; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2;">${name}</p>
-                    <p style="font-size: 9px; font-weight: 700; color: #16a34a; margin: 0; opacity: 0.8;">${role || 'Registered Nurse'}</p>
+        <div style="background: #fef2f2; border: 2px solid #ef4444; padding: 20px; border-radius: 16px; margin: 20px 0; display: flex; gap: 15px; align-items: flex-start;">
+            <div style="font-size: 24px;">⚠️</div>
+            <div>
+                <p style="color: #b91c1c; font-weight: 900; text-transform: uppercase; margin: 0; font-size: 14px; letter-spacing: 0.05em;">High-Alert Medication Warning</p>
+                <p style="font-size: 12px; font-weight: 600; color: #7f1d1d; margin: 5px 0 0 0; line-height: 1.4;">
+                    This medication requires extra caution. It has a high risk of causing significant harm if used incorrectly. 
+                    Please follow all instructions from your nurse or doctor strictly.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Helper: Generate Shariah Consent Notice
+ */
+function generateShariahNotice(info) {
+    if (!info.containsPorcine) return "";
+
+    return `
+        <div style="background: #fffbeb; border: 2px solid #f59e0b; padding: 20px; border-radius: 16px; margin: 20px 0; border-style: dashed;">
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 24px;">🕌</div>
+                <p style="font-weight: 900; color: #92400e; margin: 0; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em;">Shariah Clinical Notice</p>
+            </div>
+            <p style="font-size: 12px; font-weight: 600; color: #78350f; margin: 0; line-height: 1.5;">
+                This medication may contain porcine (non-halal) derivatives in its manufacturing process. 
+                In Shariah (Islamic Law), its use is permissible in life-saving situations or when no halal alternatives are available (Dharurah). 
+                Please consult your healthcare provider or hospital chaplain if you have concerns.
+            </p>
+            
+            <div style="margin-top: 20px; border-top: 1px solid #fde68a; pt: 15px;">
+                <p style="font-size: 11px; font-weight: 800; color: #92400e; margin-bottom: 15px;">ACKNOWLEDGEMENT OF INFORMATION</p>
+                <div style="display: flex; gap: 40px;">
+                    <div style="flex: 1;">
+                        <div style="border-bottom: 1px solid #d97706; height: 30px; margin-bottom: 5px;"></div>
+                        <p style="font-size: 9px; color: #ca8a04; font-weight: 700;">Patient / Guardian Signature</p>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="border-bottom: 1px solid #d97706; height: 30px; margin-bottom: 5px;"></div>
+                        <p style="font-size: 9px; color: #ca8a04; font-weight: 700;">Date & Time</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -215,17 +306,21 @@ function generateNurseStamp(name, role) {
 
 /**
  * Health Education (HE) Pamphlet Generator
- * Professional A4 Layout for Patients
+ * Professional A4 Layout for Patients (Medication Specific & Shariah Compliant)
  */
 function generateHEPamphlet(patient, med) {
-    const db = getDB();
-    const protocol = db.medicationProtocols[med.name] || {
-        he: {
-            reason: "This medication is given to treat your condition as prescribed by your doctor.",
-            sideEffects: "Nausea, dizziness, or mild stomach upset. Please inform your nurse if you feel unwell.",
-            citation: "Clinical Hospital Guidelines"
-        },
-        instructions: "Take exactly as instructed by your healthcare provider."
+    // Fuzzy match medication info
+    const medNameKey = Object.keys(medicationInfo).find(key => 
+        med.name.toLowerCase().includes(key.toLowerCase()) || 
+        key.toLowerCase().includes(med.name.toLowerCase())
+    );
+    
+    const info = medicationInfo[medNameKey] || {
+        purpose: "This medication is given to treat your clinical condition as prescribed by your attending doctor.",
+        instructions: "Take exactly as instructed by your healthcare provider. Do not stop without medical advice.",
+        sideEffects: ["Nausea", "Dizziness", "Mild stomach upset"],
+        highAlert: false,
+        containsPorcine: false
     };
 
     const content = `
@@ -238,19 +333,27 @@ function generateHEPamphlet(patient, med) {
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 40px; }
                 .pamphlet-container { max-width: 800px; margin: auto; }
                 .header { text-align: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
-                .hospital-name { font-size: 24px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.02em; }
-                .subtitle { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 5px; }
-                .patient-box { background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
-                .value { font-size: 14px; font-weight: 700; color: #0f172a; }
-                .section { margin-bottom: 25px; }
-                .section-title { font-size: 14px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 4px solid #1e3a8a; padding-left: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-                .section-content { font-size: 13px; font-weight: 500; padding-left: 16px; color: #334155; }
-                .highlight-blue { background: #eff6ff; padding: 15px; border-radius: 12px; border-left: 4px solid #3b82f6; }
-                .highlight-red { background: #fef2f2; padding: 15px; border-radius: 12px; border-left: 4px solid #ef4444; }
-                .nurse-section { margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-                .no-print { margin-top: 40px; text-align: center; }
-                .print-btn { background: #1e3a8a; color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+                .hospital-name { font-size: 26px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.02em; }
+                .subtitle { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 5px; }
+                
+                .patient-box { background: #f8fafc; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .label { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em; }
+                .value { font-size: 15px; font-weight: 800; color: #0f172a; }
+                
+                .section { margin-bottom: 30px; }
+                .section-title { font-size: 15px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 5px solid #1e3a8a; padding-left: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+                .section-content { font-size: 14px; font-weight: 500; padding-left: 20px; color: #334155; }
+                
+                .highlight-blue { background: #eff6ff; padding: 20px; border-radius: 16px; border-left: 5px solid #3b82f6; }
+                .highlight-red { background: #fef2f2; padding: 20px; border-radius: 16px; border-left: 5px solid #ef4444; }
+                
+                .nurse-section { margin-top: 60px; padding-top: 25px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; }
+                .no-print { margin-top: 50px; text-align: center; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 15px 40px; border-radius: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.3s; }
+                .print-btn:hover { background: #1e40af; transform: translateY(-2px); }
+                
+                ul { margin: 0; padding-left: 20px; }
+                li { margin-bottom: 5px; font-weight: 600; color: #475569; }
                 @media print { .no-print { display: none; } body { padding: 0; } }
             </style>
         </head>
@@ -258,12 +361,12 @@ function generateHEPamphlet(patient, med) {
             <div class="pamphlet-container">
                 <div class="header">
                     <div class="hospital-name">Kulliyyah of Nursing • IIUM</div>
-                    <div class="subtitle">Patient Medication Education Guide</div>
+                    <div class="subtitle">Official Medication Education Guide</div>
                 </div>
 
                 <div class="patient-box">
                     <div>
-                        <div class="label">Patient Name</div>
+                        <div class="label">Recipient Name</div>
                         <div class="value">${patient.info.name}</div>
                     </div>
                     <div>
@@ -271,57 +374,65 @@ function generateHEPamphlet(patient, med) {
                         <div class="value">${patient.info.mrn}</div>
                     </div>
                     <div>
-                        <div class="label">Medication</div>
+                        <div class="label">Medication Agent</div>
                         <div class="value">${med.name}</div>
                     </div>
                     <div>
-                        <div class="label">Dose & Route</div>
+                        <div class="label">Prescribed Dose & Route</div>
                         <div class="value">${med.dose} • ${med.route}</div>
                     </div>
                 </div>
 
+                ${generateHighAlertWarning(info)}
+
                 <div class="section">
                     <div class="section-title">💊 Purpose of Medication</div>
                     <div class="section-content highlight-blue">
-                        ${protocol.he.reason}
+                        ${info.purpose}
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">📋 Administration Instructions</div>
+                    <div class="section-title">📋 How to Use (Instructions)</div>
                     <div class="section-content">
-                        ${protocol.instructions}
+                        ${info.instructions}
                     </div>
                 </div>
 
                 <div class="section">
                     <div class="section-title">⚠️ What to Watch For (Side Effects)</div>
                     <div class="section-content highlight-red">
-                        ${protocol.he.sideEffects}
-                        <p style="margin-top: 10px; font-weight: 700;">Please alert your nurse immediately if you experience itching, difficulty breathing, or sudden rashes.</p>
+                        <ul>
+                            ${info.sideEffects.map(se => `<li>${se}</li>`).join('')}
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: 800; color: #b91c1c; font-size: 12px;">
+                            *** ALERT YOUR NURSE IMMEDIATELY if you experience itching, rash, swelling, or difficulty breathing. ***
+                        </p>
                     </div>
                 </div>
 
+                ${generateShariahNotice(info)}
+
                 <div class="nurse-section">
                     <div>
-                        <div class="label">Counselled By</div>
+                        <div class="label">Clinical Educator</div>
                         ${generateNurseStamp(currentUser.fullname, currentUser.role)}
                     </div>
                     <div style="text-align: right;">
-                        <div class="label">Date & Time</div>
+                        <div class="label">Education Date & Time</div>
                         <div class="value">${new Date().toLocaleString()}</div>
                     </div>
                 </div>
 
                 <div class="no-print">
-                    <button class="print-btn" onclick="window.print()">Print This Guide</button>
+                    <button class="print-btn" onclick="window.print()">🖨️ Print Education Sheet</button>
                 </div>
             </div>
         </body>
         </html>
     `;
 
-    const w = window.open('', '', 'width=900,height=800');
+    const w = window.open('', '', 'width=900,height=850');
     w.document.write(content);
     w.document.close();
 }

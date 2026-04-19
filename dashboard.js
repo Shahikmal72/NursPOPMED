@@ -1,7 +1,10 @@
 // Dashboard and Main UI Logic
+let currentBCMAPatient = null;
 
 function updateDashboard() {
-    renderCabinet2();
+    if (document.getElementById('cabinet2-section') && !document.getElementById('cabinet2-section').classList.contains('hidden')) {
+        renderCabinet2();
+    }
     renderAlerts();
     updateDashboardStats();
     
@@ -247,8 +250,13 @@ function processAdministration(db, medication, bedNumber) {
         
         showNotification(`${medication.name} successfully administered. Legal eMAR updated.`, 'success');
         
-        // Refresh the BCMA modal to show the "Given ✅" status and Legal Stamp
-        openPatientBCMAModal(bedNumber);
+        // Refresh the appropriate view
+        const bcmaModal = document.getElementById('bcma-workflow-modal');
+        if (bcmaModal) {
+            openPatientBCMAModal(bedNumber);
+        } else {
+            renderCabinet2();
+        }
         updateDashboard();
     }, "BCMA Unit 2: Administering", `Drawer Unlocked. Please administer ${medication.name} to the patient.`);
 }
@@ -339,87 +347,116 @@ function renderAlerts() {
 function renderCabinet2() {
     const db = getDB();
     const container = document.getElementById('cabinet2-grid');
-    container.innerHTML = '';
+    if (!container) return;
 
-    db.patients.forEach(patient => {
-        const bedCard = document.createElement('div');
-        bedCard.className = `group p-5 border rounded-[2rem] shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 ${patient.occupied ? 'bg-white border-gray-100' : 'bg-gray-50/50 border-dashed border-gray-200'}`;
-        
-        let medListHtml = '';
-        if (patient.occupied) {
-            // eMAR Summary for the bed card
-            const meds = patient.medications;
-            const administered = meds.filter(m => m.status === 'Administered' || m.status === 'Given').length;
-            const pending = meds.filter(m => m.status === 'Pending' || m.status === 'Dispensed').length;
-
-            medListHtml = `
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <div class="p-2 bg-green-50 rounded-xl border border-green-100 text-center">
-                        <p class="text-[8px] font-black text-green-600 uppercase tracking-widest">Administered</p>
-                        <p class="text-lg font-black text-green-700">${administered}</p>
-                    </div>
-                    <div class="p-2 bg-amber-50 rounded-xl border border-amber-100 text-center">
-                        <p class="text-[8px] font-black text-amber-600 uppercase tracking-widest">Due/Pending</p>
-                        <p class="text-lg font-black text-amber-700">${pending}</p>
-                    </div>
-                </div>
-                <button onclick="initiateBCMA(${patient.bedNumber})" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group">
-                    <svg class="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                    BCMA SCANNER
+    const occupiedPatients = db.patients.filter(p => p.occupied);
+    
+    // 1. Quick Patient Switch (Horizontal Pill Style)
+    let patientPillsHtml = `
+        <div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
+            ${occupiedPatients.map(p => `
+                <button onclick="selectPatientForBCMA('${p.info.mrn}')" 
+                class="px-5 py-2.5 rounded-full text-xs font-black whitespace-nowrap transition-all border-2 ${
+                    currentBCMAPatient && currentBCMAPatient.info.mrn === p.info.mrn 
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' 
+                    : 'bg-white border-slate-100 text-slate-500 hover:border-blue-200'
+                }">
+                    Bed ${p.bedNumber}: ${p.info.name.split(' ')[0]}
                 </button>
-            `;
-        }
+            `).join('')}
+        </div>
+    `;
 
-        bedCard.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <span class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em]">Clinical Bed Unit</span>
-                    <h3 class="font-black text-3xl text-blue-900 leading-none">${patient.bedNumber}</h3>
+    // 2. Main BCMA Area
+    let mainContentHtml = '';
+    if (currentBCMAPatient) {
+        // Sync with latest DB data
+        const patient = db.patients.find(p => p.info.mrn === currentBCMAPatient.info.mrn);
+        if (!patient) {
+            currentBCMAPatient = null;
+            renderCabinet2();
+            return;
+        }
+        
+        const medications = patient.medications;
+        
+        mainContentHtml = `
+            <div class="space-y-6">
+                <!-- Active Patient Summary -->
+                <div class="bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10">
+                        <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-200 mb-1">Active Bed Unit ${patient.bedNumber}</p>
+                        <h3 class="text-2xl font-black tracking-tighter">${patient.info.name}</h3>
+                        <p class="text-xs font-bold text-blue-100/70 mt-1">${patient.info.mrn} • Allergy: <span class="text-red-300">${patient.info.allergies || 'NKDA'}</span></p>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    ${patient.occupied ? `
-                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase pr-1">Inpatient</span>
+
+                <!-- Medication Action Cards (THUMB-FRIENDLY) -->
+                <div class="grid grid-cols-1 gap-4">
+                    ${medications.length === 0 ? `
+                        <div class="py-20 text-center opacity-20">
+                            <p class="font-black uppercase tracking-widest">No medications assigned.</p>
                         </div>
-                        <button onclick="openPatientModal(${patient.bedNumber})" class="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
-                    ` : ''}
+                    ` : medications.map(med => {
+                        const isGiven = med.status === 'Given' || med.status === 'Administered';
+                        const statusColor = getMedicationStatus(med);
+                        
+                        return `
+                            <div class="bg-white rounded-[2rem] shadow-md p-6 flex flex-col gap-4 border border-slate-100 transition-all">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-lg font-black text-slate-900 leading-none">${med.name}</p>
+                                        <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-2">
+                                            ${med.dose} • ${med.route} • ${med.frequency}
+                                        </p>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="text-[10px] font-bold text-slate-400">Scheduled: ${formatDateTime(med.timeDue)}</span>
+                                        </div>
+                                    </div>
+                                    ${isGiven ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">GIVEN</span>' : ''}
+                                </div>
+
+                                <!-- BIG ACTION BUTTON -->
+                                ${isGiven 
+                                    ? `
+                                      <div class="flex flex-col gap-3">
+                                          <button class="w-full py-4 rounded-2xl bg-slate-100 text-slate-400 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 cursor-not-allowed" disabled>
+                                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                              Given ✓
+                                          </button>
+                                          <div class="flex gap-2">
+                                              <button onclick="generateHEPamphlet(${JSON.stringify(patient).replace(/"/g, '&quot;')}, ${JSON.stringify(med).replace(/"/g, '&quot;')})" class="flex-1 py-3 rounded-xl bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase tracking-widest border border-indigo-100 transition-all active:scale-95">📘 HE Pamphlet</button>
+                                              <div class="flex-1">${generateNurseStamp(med.nurseName, med.nurseRole)}</div>
+                                          </div>
+                                      </div>
+                                      `
+                                    : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" 
+                                        class="w-full py-5 rounded-2xl bg-green-600 text-white font-black text-base uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        ✔ Administer Now
+                                       </button>`
+                                }
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
-            ${patient.occupied ? `
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Assigned Patient</p>
-                            <p class="text-sm font-extrabold text-gray-900 truncate">${patient.info.name}</p>
-                            <p class="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">${patient.info.mrn}</p>
-                        </div>
-                    </div>
-                    
-                    ${medListHtml}
-
-                    <div class="pt-3 flex justify-between items-center border-t border-slate-100">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Clinical Nurse</span>
-                            <span class="text-[9px] font-black text-blue-600">${patient.info.nurseInCharge}</span>
-                        </div>
-                        <button onclick="handleTerminate(${patient.bedNumber})" class="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter hover:bg-red-100 transition-all">Archive Unit</button>
-                    </div>
-            ` : `
-                <div class="flex flex-col items-center justify-center py-10 opacity-40 group-hover:opacity-100 transition-all">
-                    <div class="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center mb-3 border-2 border-dashed border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-50 transition-all">
-                        <svg class="w-8 h-8 text-slate-300 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    </div>
-                    <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] group-hover:text-blue-600 mb-4">Unit Available</p>
-                    <button onclick="registerNewPatient(${patient.bedNumber})" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transform active:scale-95 transition-all shadow-lg shadow-blue-900/20">Register Admission</button>
-                </div>
-            `}
         `;
-        container.appendChild(bedCard);
-    });
+    } else {
+        mainContentHtml = `
+            <div class="flex flex-col items-center justify-center py-20 opacity-30">
+                <svg class="w-20 h-20 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <p class="text-xl font-black uppercase tracking-[0.2em]">No Active Patients</p>
+                <p class="text-sm font-bold mt-2">Please register an admission in the Home section.</p>
+            </div>
+        `;
+    }
+
+    container.innerHTML = patientPillsHtml + mainContentHtml;
 }
 
 window.registerNewPatient = function(bedNumber) {
