@@ -504,6 +504,25 @@ function initializeDB() {
         existingDB.ivSolutions = initialData.ivSolutions;
         existingDB.doctors = initialData.doctors;
         
+        // Refresh doctors for existing patients to ensure they align with the new list
+        if (existingDB.patients && Array.isArray(existingDB.patients)) {
+            existingDB.patients.forEach(patient => {
+                if (patient.info && patient.info.doctor) {
+                    // If the current doctor is not in the new list, assign a random one from the new list
+                    if (!initialData.doctors.includes(patient.info.doctor)) {
+                        patient.info.doctor = initialData.doctors[Math.floor(Math.random() * initialData.doctors.length)];
+                    }
+                }
+                if (patient.medications && Array.isArray(patient.medications)) {
+                    patient.medications.forEach(med => {
+                        if (med.doctor && !initialData.doctors.includes(med.doctor)) {
+                            med.doctor = patient.info.doctor;
+                        }
+                    });
+                }
+            });
+        }
+        
         // Add missing medications to inventory
         const allMedNames = [
             ...initialData.medications.oral,

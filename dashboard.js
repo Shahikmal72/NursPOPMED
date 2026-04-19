@@ -315,14 +315,7 @@ window.registerNewPatient = function(bedNumber) {
     // Clinical simulation data generation
     const firstNames = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'];
     const lastNames = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'];
-    const doctors = [
-        'Assoc. Prof. Dr. Mohd Said Nurumal (Consultant)',
-        'Assoc. Prof. Dr. Muhammad Kamil Che Hasan (Consultant)',
-        'Assoc. Prof. Dr. Salizar Mohamed Ludin (Consultant)',
-        'Asst. Prof. Dr. Siti Zuhailah Abdullah (Specialist)',
-        'Asst. Prof. Dr. Patimah Abdul Wahiv (Specialist)',
-        'Asst. Prof. Dr. Santhna Letchmi Panduragan (Specialist)'
-    ];
+    const doctors = db.doctors;
     const diagnoses = [
         'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
         'Congestive Cardiac Failure (CCF) - NYHA Class III',
@@ -769,7 +762,7 @@ function openPatientModal(bedNumber) {
                             <p class="text-sm font-bold text-blue-900">${patient.info.diagnosis}</p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Attending Consultant</p>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Attending Clinician</p>
                             <p class="text-sm font-bold text-blue-900">${patient.info.doctor}</p>
                         </div>
                     </div>
