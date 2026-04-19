@@ -55,8 +55,8 @@ function processOrder(orderData) {
         patient.medications.push(medEntry);
 
         updateDB(db);
-        generateLog('TRANSFER_CABINET_2', currentUser.id, `Pharmacological transfer: ${orderData.medicationName} to Clinical Unit ${orderData.bedNumber}`);
-        showNotification(`Success: ${orderData.medicationName} digitally transferred to Cabinet 2.`, 'success');
+        generateLog('TRANSFER_CABINET_2', currentUser.id, `Sent medicine: ${orderData.medicationName} to Bed ${orderData.bedNumber}`);
+        showNotification(`Success: ${orderData.medicationName} sent to Patient Bed.`, 'success');
         
         // Refresh UI
         updateDashboard();

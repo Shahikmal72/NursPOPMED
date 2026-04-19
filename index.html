@@ -324,12 +324,12 @@
                     <p class="text-[9px] font-bold uppercase tracking-[0.2em] opacity-70 mt-1">Kulliyyah of Nursing</p>
                 </div>
                 <div id="nav-links" class="hidden md:flex gap-6 ml-10">
-                    <button onclick="showSection('dashboard')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Dashboard</button>
-                    <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 1</button>
-                    <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 2</button>
-                    <button onclick="showSection('cabinet3')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 3</button>
-                    <button onclick="showSection('inventory')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Inventory</button>
-                    <button onclick="showSection('logs')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Audit Trails</button>
+                    <button onclick="showSection('dashboard')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Home</button>
+                    <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Order</button>
+                    <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Patient Meds</button>
+                    <button onclick="showSection('cabinet3')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">IV Room</button>
+                    <button onclick="showSection('inventory')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Stock</button>
+                    <button onclick="showSection('logs')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">History</button>
                 </div>
             </div>
             <div class="flex items-center gap-6">
@@ -342,13 +342,13 @@
         </nav>
 
         <!-- Mobile Nav -->
-        <div class="md:hidden bg-blue-700 text-white p-2 flex justify-around text-xs overflow-x-auto">
-            <button onclick="showSection('dashboard')" class="px-2 py-1">Dashboard</button>
-            <button onclick="showSection('cabinet1')" class="px-2 py-1">Cab 1</button>
-            <button onclick="showSection('cabinet2')" class="px-2 py-1">Cab 2</button>
-            <button onclick="showSection('cabinet3')" class="px-2 py-1">Cab 3</button>
+        <div class="md:hidden bg-blue-700 text-white p-2 flex justify-around text-[10px] overflow-x-auto font-bold uppercase tracking-tighter">
+            <button onclick="showSection('dashboard')" class="px-2 py-1">Home</button>
+            <button onclick="showSection('cabinet1')" class="px-2 py-1">Order</button>
+            <button onclick="showSection('cabinet2')" class="px-2 py-1">Patients</button>
+            <button onclick="showSection('cabinet3')" class="px-2 py-1">IV</button>
             <button onclick="showSection('inventory')" class="px-2 py-1">Stock</button>
-            <button onclick="showSection('logs')" class="px-2 py-1">Logs</button>
+            <button onclick="showSection('logs')" class="px-2 py-1">History</button>
         </div>
 
         <!-- Content Area -->
@@ -376,7 +376,7 @@
                                     <span class="px-2 py-0.5 md:px-3 md:py-1 bg-blue-600 text-white rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest shadow-lg">Clinical Informatics Unit</span>
                                     <span class="px-2 py-0.5 md:px-3 md:py-1 bg-white/10 text-blue-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-white/10">Advanced System</span>
                                 </div>
-                                <h2 class="text-2xl md:text-5xl font-black text-white tracking-tighter mb-2 md:mb-3 leading-none">POPMED Workspace</h2>
+                                <h2 class="text-2xl md:text-5xl font-black text-white tracking-tighter mb-2 md:mb-3 leading-none">Home</h2>
                                 <p class="text-base md:text-2xl font-bold italic text-blue-300 tracking-tight leading-tight mb-4 md:mb-0">"Innovation in Nursing: Smart Solutions"</p>
                                 
                                 <div class="mt-4 md:mt-8 flex flex-col sm:flex-row justify-center md:justify-start gap-3 md:gap-4 w-full">
@@ -454,7 +454,7 @@
                         <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
                             <h2 class="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                Patient Selection
+                                Select Patient
                             </h2>
                             <div class="relative">
                                 <select id="cabinet1-patient-list" onchange="selectPatientForCabinet1(this.value)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none font-medium">
@@ -501,23 +501,23 @@
                     <!-- Processing Panel -->
                     <div class="lg:col-span-2">
                         <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
-                            <div class="flex justify-between items-start mb-8">
+                            <div class="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                                 <div>
-                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Medication Processing</h2>
-                                    <p class="text-sm text-gray-500 font-medium">Process and transfer medications to Cabinet 2</p>
+                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Medicine Order</h2>
+                                    <p class="text-sm text-gray-500 font-medium italic">Create and send medicine to patient bedside</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Check Stock</button>
-                                    <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider">
-                                        Cabinet 1: Automated Order Unit
+                                    <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Stock Check</button>
+                                    <div class="bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
+                                        Digital Order Unit
                                     </div>
                                 </div>
-                                <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                    <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Functional Protocol</p>
-                                    <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
-                                        Cabinet 1 serves as the primary **Digital Prescription Processing Unit**. All physician orders are verified here, linked to patient MRN, and prepared for secure transfer to the physical dispensing unit (Cabinet 2).
-                                    </p>
-                                </div>
+                            </div>
+                            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Simple Guide</p>
+                                <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
+                                    Use this section to **Order Medicine**. Once you fill the form, the medicine will be sent to the **Patient bedside** for dispensing.
+                                </p>
                             </div>
 
                             <form id="cabinet1-form" class="space-y-8">
@@ -599,22 +599,22 @@
             <!-- Cabinet 2 Section -->
             <section id="cabinet2-section" class="hidden">
                 <div class="max-w-6xl mx-auto">
-                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 mb-8">
-                        <div class="flex justify-between items-start mb-6">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-6 md:mb-8">
+                        <div class="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                             <div>
-                                <h2 class="text-3xl font-black text-blue-900 tracking-tighter">Cabinet 2: Point-of-Care Dispensing</h2>
-                                <p class="text-sm text-gray-500 font-bold italic">Smart Drawer Medication Management System</p>
+                                <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">Patient Meds</h2>
+                                <p class="text-xs md:text-sm text-gray-500 font-bold italic">Give medicine to patients at their bedside</p>
                             </div>
-                            <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">Dispensing Active</div>
+                            <div class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">Dispensing Room</div>
                         </div>
-                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-100">
-                            <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Functional Protocol</p>
+                        <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Simple Guide</p>
                             <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
-                                Cabinet 2 is the **Electronic Medication Administration Interface**. It manages the automated release of medications at the bedside. Each drawer is software-locked until verification of **Health Education (HE)** is confirmed, ensuring maximum patient safety.
+                                This section shows each **Patient Bed**. Click on a bed to give the medicine. The drawer will only open after you check the **Patient Guide**.
                             </p>
                         </div>
                     </div>
-                    <div id="cabinet2-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                    <div id="cabinet2-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
                         <!-- Bed drawers populated here -->
                     </div>
                 </div>
@@ -623,49 +623,46 @@
             <!-- Cabinet 3 Section -->
             <section id="cabinet3-section" class="hidden">
                 <div class="max-w-4xl mx-auto">
-                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
-                        <!-- Decorative element -->
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
-                        
+                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative">
-                            <div class="flex items-center gap-4 mb-8">
-                                <div class="bg-purple-100 p-3 rounded-2xl text-purple-600">
-                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <div class="flex flex-col md:flex-row items-center gap-6 mb-8">
+                                <div class="bg-purple-600 p-4 rounded-2xl text-white shadow-lg shadow-purple-200">
+                                    <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.183.394l-1.158.908a2 2 0 00-.742 2.053 2 2 0 001.458 1.458l.412.062a2 2 0 001.458-1.458l.158-.158a2 2 0 00.517-3.86l.158-.318a2 2 0 01.517-3.86l.477-2.387a2 2 0 00-.547-1.022l-.908-1.158a2 2 0 00-2.053-.742l-.062.412a2 2 0 001.458 1.458l.158.158a2 2 0 003.86-.517l.318.158a2 2 0 013.86-.517l2.387.477a2 2 0 001.022.547l.908 1.158a2 2 0 00.742 2.053l-.412-.062a2 2 0 00-1.458 1.458l-.158.158a2 2 0 00-3.86.517l-.318-.158a2 2 0 01-3.86-.517l-2.387-.477a2 2 0 00-1.022-.547l-.908-1.158z"></path></svg>
                                 </div>
-                                <div>
-                                    <h2 class="text-3xl font-extrabold text-purple-900 tracking-tight">Cabinet 3: Sterile IV Storage</h2>
-                                    <p class="text-sm text-gray-500 font-medium italic">Restricted Access • Precision Dilution Control</p>
+                                <div class="text-center md:text-left">
+                                    <h2 class="text-2xl md:text-3xl font-black text-purple-900 tracking-tighter leading-none mb-2">IV Room</h2>
+                                    <p class="text-sm text-gray-500 font-bold italic">Mix medicine and prepare drips</p>
                                 </div>
                             </div>
 
                             <form id="cabinet3-form" class="space-y-6">
-                                <div class="mb-8 p-6 bg-purple-50 rounded-3xl border border-purple-100">
-                                    <p class="text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1">Functional Protocol</p>
+                                <div class="mb-6 p-5 bg-purple-50 rounded-2xl border border-purple-100">
+                                    <p class="text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1">Simple Guide</p>
                                     <p class="text-[11px] text-purple-600 font-bold leading-relaxed">
-                                        Cabinet 3 is the **Sterile Compounding & Diluent Storage**. It is specifically designed for the secure storage of IV solutions and diluents. Access is restricted to protocols requiring medication reconstitution and complex IV preparation.
+                                        Use this section to **Prepare Drips**. Select the patient and the medicine you need to mix.
                                     </p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="space-y-2">
-                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Target Patient</label>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Patient</label>
                                         <select id="iv-patient-list" onchange="selectPatientForCabinet3(this.value)" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-semibold" required>
-                                            <option value="">Select Patient</option>
+                                            <option value="">Choose Patient</option>
                                             <!-- Populated by JS -->
                                         </select>
                                     </div>
                                     <div class="space-y-2">
-                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Medication to Dilute</label>
-                                        <input type="text" id="iv-med-dilute" oninput="checkCabinet3Dilution(this.value)" placeholder="Enter medication name" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-semibold" required>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Medicine to Mix</label>
+                                        <input type="text" id="iv-med-dilute" oninput="checkCabinet3Dilution(this.value)" placeholder="Enter medicine name..." class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-semibold" required>
                                     </div>
                                     <div id="cab3-dilution-info" class="md:col-span-2 hidden">
                                         <div class="p-4 bg-purple-50 border border-purple-100 rounded-2xl">
-                                            <p class="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">Dilution Protocol Found</p>
+                                            <p class="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">Mixing Guide Found</p>
                                             <p id="cab3-dilution-summary" class="text-xs font-bold text-purple-900"></p>
-                                            <button type="button" onclick="showFullDilutionProtocolFromCab3()" class="mt-2 text-[10px] font-extrabold text-purple-700 underline uppercase tracking-wider">View Preparation Steps</button>
+                                            <button type="button" onclick="showFullDilutionProtocolFromCab3()" class="mt-2 text-[10px] font-extrabold text-purple-700 underline uppercase tracking-wider">View Steps</button>
                                         </div>
                                     </div>
                                     <div class="space-y-2 md:col-span-2">
-                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Required IV Solution (Diluent)</label>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Drip Solution</label>
                                         <select id="iv-solution-type" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-bold text-purple-900" required>
                                             <!-- Populated by JS -->
                                         </select>
@@ -675,13 +672,12 @@
                                 <div id="cabinet3-warning" class="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
                                     <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                                     <p class="text-xs text-amber-800 font-medium leading-relaxed">
-                                        Confirm that the diluent is compatible with the medication according to the local pharmacopeia. 
-                                        Ensure aseptic technique is maintained during dilution.
+                                        Make sure the solution is correct for this medicine.
                                     </p>
                                 </div>
 
                                 <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-5 rounded-2xl font-bold text-xl shadow-xl hover:shadow-purple-500/30 transform transition-all hover:-translate-y-1 active:scale-95">
-                                    AUTHORIZE & ACCESS CABINET
+                                    GET ACCESS
                                 </button>
                                 
                                 <!-- Hidden inputs -->
@@ -696,35 +692,33 @@
             <!-- Inventory Section -->
             <section id="inventory-section" class="hidden">
                 <div class="max-w-7xl mx-auto">
-                    <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
-                        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 opacity-20"></div>
-                        
+                    <div class="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative z-10">
-                            <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-8 md:mb-12">
                                 <div>
-                                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter">Pharmacological Inventory</h2>
-                                    <p class="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs mt-2 italic">Clinical Asset Management & Stock Control</p>
+                                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none mb-2">Stock Room</h2>
+                                    <p class="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs mt-2 italic">Medicine Stock & Inventory Control</p>
                                 </div>
-                                <div class="flex gap-6">
-                                    <div class="text-center px-6 py-3 bg-slate-50 rounded-3xl border border-slate-100">
-                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total SKU</p>
-                                        <p id="inv-total-sku" class="text-2xl font-black text-slate-900">0</p>
+                                <div class="flex gap-4 md:gap-6">
+                                    <div class="text-center px-4 md:px-6 py-2 md:py-3 bg-slate-50 rounded-2xl md:rounded-3xl border border-slate-100">
+                                        <p class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
+                                        <p id="inv-total-sku" class="text-xl md:text-2xl font-black text-slate-900">0</p>
                                     </div>
-                                    <div class="text-center px-6 py-3 bg-blue-50 rounded-3xl border border-blue-100 relative">
-                                        <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Low Stock Alerts</p>
-                                        <p id="inv-low-alerts" class="text-2xl font-black text-blue-600">0</p>
+                                    <div class="text-center px-4 md:px-6 py-2 md:py-3 bg-red-50 rounded-2xl md:rounded-3xl border border-red-100 relative">
+                                        <p class="text-[8px] md:text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Low Stock</p>
+                                        <p id="inv-low-alerts" class="text-xl md:text-2xl font-black text-red-600">0</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="bg-slate-50/50 rounded-[2rem] border border-slate-100 overflow-hidden">
-                                <div class="grid grid-cols-12 gap-4 p-6 bg-white border-b border-slate-100">
-                                    <div class="col-span-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Agent</div>
-                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Batch Number</div>
-                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Qty</div>
-                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry Control</div>
-                                    <div class="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Temp</div>
-                                    <div class="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</div>
+                            <div class="bg-slate-50/50 rounded-2xl md:rounded-[2rem] border border-slate-100 overflow-hidden">
+                                <div class="grid grid-cols-12 gap-2 md:gap-4 p-4 md:p-6 bg-white border-b border-slate-100 font-black text-[8px] md:text-[10px] text-slate-400 uppercase tracking-widest">
+                                    <div class="col-span-5 md:col-span-3">Medicine Name</div>
+                                    <div class="hidden md:block md:col-span-2">Batch No</div>
+                                    <div class="col-span-4 md:col-span-2">In Stock</div>
+                                    <div class="hidden md:block md:col-span-2">Expiry</div>
+                                    <div class="hidden md:block md:col-span-1">Temp</div>
+                                    <div class="col-span-3 md:col-span-2 text-right">Action</div>
                                 </div>
                                 <div id="inventory-list" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar">
                                     <!-- Inventory items populated here -->
@@ -738,24 +732,24 @@
             <!-- Logs Section -->
             <section id="logs-section" class="hidden">
                 <div class="max-w-6xl mx-auto">
-                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100">
-                        <div class="flex justify-between items-center mb-8">
+                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-100">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                             <div>
-                                <h2 class="text-3xl font-extrabold text-blue-900 tracking-tight">System Audit Trails</h2>
-                                <p class="text-sm text-gray-500 font-medium">Immutable verification logs for all pharmacological activities</p>
+                                <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">History</h2>
+                                <p class="text-xs md:text-sm text-gray-500 font-bold italic">Records of all actions taken in the system</p>
                             </div>
-                            <div class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold border border-blue-100">
-                                Total Logs: <span id="audit-count">0</span>
+                            <div class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
+                                Total Actions: <span id="audit-count">0</span>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                            <div class="grid grid-cols-12 gap-4 p-4 bg-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b">
-                                <div class="col-span-3">Timestamp</div>
-                                <div class="col-span-2">Authorized Personnel</div>
-                                <div class="col-span-2">Action Type</div>
-                                <div class="col-span-5">Activity Details</div>
+                            <div class="grid grid-cols-12 gap-2 md:gap-4 p-4 bg-gray-100 text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                                <div class="col-span-3">Time</div>
+                                <div class="col-span-2">Staff</div>
+                                <div class="col-span-2">Action</div>
+                                <div class="col-span-5">Details</div>
                             </div>
-                            <div id="audit-logs" class="max-h-[600px] overflow-y-auto custom-scrollbar divide-y divide-gray-100">
+                            <div id="audit-logs" class="max-h-[600px] overflow-y-auto custom-scrollbar divide-y divide-gray-100 text-[10px] md:text-xs">
                                 <!-- Logs populated here -->
                             </div>
                         </div>

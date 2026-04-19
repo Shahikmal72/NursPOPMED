@@ -32,8 +32,8 @@ function requestIVAccess(requestData) {
 
         db.ivRequests.push(requestLog);
         updateDB(db);
-        generateLog('IV_ACCESS', currentUser.id, `Accessed Cabinet 3: Removed ${requestData.solutionType} for dilution of ${requestData.medicationToDilute} (Bed ${requestData.bedNumber})`);
-        showNotification(`Access Granted: ${requestData.solutionType} removed from Cabinet 3 for dilution.`, 'success');
+        generateLog('IV_ACCESS', currentUser.id, `Accessed IV Room: Prepared ${requestData.solutionType} for ${requestData.medicationToDilute} (Bed ${requestData.bedNumber})`);
+        showNotification(`Success: ${requestData.solutionType} ready for Bed ${requestData.bedNumber}.`, 'success');
         
         // Refresh UI
         updateDashboard();
