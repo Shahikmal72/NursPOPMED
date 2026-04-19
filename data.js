@@ -481,10 +481,16 @@ const initialData = {
 
 // Initialize localStorage if empty
 function initializeDB() {
-    let existingDB = JSON.parse(localStorage.getItem('popmed_db'));
+    let existingDB;
+    try {
+        existingDB = JSON.parse(localStorage.getItem('popmed_db'));
+    } catch (e) {
+        console.error('DB Parse Error, resetting...', e);
+        existingDB = null;
+    }
     
     // Proactive Sync: Ensure users, developers, supervisor, inventory, medications and protocols are always up to date
-    if (existingDB) {
+    if (existingDB && typeof existingDB === 'object') {
         // Sync Users (preserve any dynamic data if added, but update base properties)
         existingDB.users = initialData.users;
         
@@ -647,7 +653,19 @@ function initializeDB() {
 }
 
 function getDB() {
-    return JSON.parse(localStorage.getItem('popmed_db'));
+    try {
+        const data = localStorage.getItem('popmed_db');
+        if (!data) {
+            initializeDB();
+            return JSON.parse(localStorage.getItem('popmed_db'));
+        }
+        return JSON.parse(data);
+    } catch (e) {
+        console.error('Database Retrieval Error:', e);
+        localStorage.removeItem('popmed_db');
+        initializeDB();
+        return initialData;
+    }
 }
 
 function updateDB(data) {
