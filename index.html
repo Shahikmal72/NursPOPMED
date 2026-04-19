@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POPMED - Automated Dispensing Cabinet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        #login-screen {
+            background-image: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-color: #0f172a;
+        }
+
+        #main-app {
+            background: rgba(241, 245, 249, 0.96);
+            backdrop-filter: blur(5px);
+            min-height: 100vh;
+        }
+
+        .status-green { background-color: #10B981; }
+        .status-yellow { background-color: #F59E0B; }
+        .status-red { background-color: #EF4444; }
+        .touch-target { min-height: 44px; min-width: 44px; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        .nav-gradient {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-slow { animation: bounce-slow 3s infinite ease-in-out; }
+        
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+        /* Simulation Overlays */
+        .simulation-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .simulation-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .drawer-animation {
+            width: 300px;
+            height: 200px;
+            background: #334155;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #475569;
+            box-shadow: 0 0 50px rgba(59, 130, 246, 0.3);
+        }
+        .drawer-front {
+            position: absolute;
+            inset: 10px;
+            background: #1e293b;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .drawer-animation.open .drawer-front {
+            transform: translateY(120px) scaleY(0.1);
+        }
+        .drawer-handle {
+            width: 60px;
+            height: 10px;
+            background: #64748b;
+            border-radius: 5px;
+        }
+        .drawer-content-sim {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 40px;
+            background: #3b82f6;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.4s 0.6s;
+        }
+        .drawer-animation.open .drawer-content-sim {
+            opacity: 1;
+        }
+        
+        /* Hand Animation for Dispensing (Taking) */
+        @keyframes takeHand {
+            0% { transform: translateY(100px); opacity: 0; }
+            50% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-150px); opacity: 0; }
+        }
+        .hand-take {
+            position: absolute;
+            font-size: 3rem;
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+        }
+        .hand-take.active {
+            display: block;
+            animation: takeHand 2s ease-in-out forwards;
+        }
+
+        /* Hand Animation for Restocking (Putting) */
+        @keyframes putHand {
+            0% { transform: translateY(-150px); opacity: 0; }
+            50% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(20px); opacity: 0; }
+        }
+        .hand-put {
+            position: absolute;
+            font-size: 3rem;
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+        }
+        .hand-put.active {
+            display: block;
+            animation: putHand 2s ease-in-out forwards;
+        }
+
+        /* Roller Animation for Transfer */
+        @keyframes rollerMove {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(150px); }
+        }
+        @keyframes medOnRoller {
+            0% { transform: translateX(-150px) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateX(150px) rotate(360deg); opacity: 0; }
+        }
+        .roller-container {
+            position: relative;
+            width: 300px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+            border-radius: 30px;
+            margin-top: 20px;
+        }
+        .roller-belt {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            animation: rollerMove 1s linear infinite;
+        }
+        .med-emoji-transfer {
+            font-size: 2.5rem;
+            position: absolute;
+            z-index: 10;
+            animation: medOnRoller 3s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <!-- Login Screen -->
+    <div id="login-screen" class="flex flex-col md:flex-row items-center justify-center min-h-screen p-6 gap-8 relative overflow-hidden">
+        <!-- Decorative background elements -->
+        <div class="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+
+        <!-- Login Form Box -->
+        <div class="glass-panel p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm transform transition-all hover:scale-[1.01] border border-white/40 relative z-10 bg-white/90 backdrop-blur-md">
+            <div class="flex flex-col items-center mb-6">
+                <div class="bg-white p-3 rounded-2xl shadow-inner mb-4 border border-slate-100">
+                    <img src="logo.png" alt="IIUM Logo" class="w-16 h-16 object-contain" onerror="this.src='https://via.placeholder.com/80x80?text=IIUM+LOGO'">
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter text-center">POPMED</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="h-[1px] w-3 bg-blue-600/30"></span>
+                    <p class="text-[9px] font-black text-blue-700 uppercase tracking-[0.3em]">Kulliyyah of Nursing</p>
+                    <span class="h-[1px] w-3 bg-blue-600/30"></span>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <form id="login-form" class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Staff ID Access</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            </span>
+                            <input type="text" id="login-userid" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 text-sm" placeholder="Enter Clinical ID" required>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Security Key</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </span>
+                            <input type="password" id="login-password" class="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 text-sm" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-blue-900/20 transition-all active:scale-95 uppercase tracking-widest mt-2">Authorize Access</button>
+                </form>
+                
+                <div class="pt-4 border-t border-slate-100 text-center">
+                    <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">© 2026 IIUM KON • Biomedical Security</p>
+                    <p class="text-[8px] text-blue-600 font-bold uppercase tracking-widest">Innovation in Nursing Informatics</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Showcase Box -->
+        <div class="glass-panel p-5 rounded-[2rem] shadow-xl w-full max-w-xs transform transition-all hover:scale-[1.01] border border-white/40 relative z-10 bg-white/90 backdrop-blur-md">
+            <div class="flex flex-col items-center">
+                <div class="mb-4 relative">
+                    <div class="w-24 h-24 rounded-2xl overflow-hidden border-2 border-blue-50 shadow-lg">
+                        <img src="Developer.jpg" alt="Development Team" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/100x100?text=Team'">
+                    </div>
+                </div>
+
+                <h2 class="text-sm font-black text-slate-900 tracking-tighter mb-3 uppercase">System Developers</h2>
+                
+                <div class="space-y-1.5 w-full">
+                    <div class="p-2 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
+                        <p class="text-[11px] font-bold text-slate-800">Muhammad Shah Ikmal Junaidi</p>
+                    </div>
+                    <div class="p-2 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
+                        <p class="text-[11px] font-bold text-slate-800">Arisya Elyana Ahmad Fairuz</p>
+                    </div>
+                    <div class="p-2 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
+                        <p class="text-[11px] font-bold text-slate-800">Nuraleeya Tahirah Mohammad</p>
+                    </div>
+                    <div class="p-2 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
+                        <p class="text-[11px] font-bold text-slate-800">Nurshazreen Aqeela Mat Zaib</p>
+                    </div>
+                    <div class="p-2 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-blue-50 hover:border-blue-100 transition-all">
+                        <p class="text-[11px] font-bold text-slate-800">Siti Nurkhairina Amad Jupri</p>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-blue-900 rounded-xl border border-blue-800 shadow-md">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1 bg-blue-800 rounded-lg text-blue-200">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[8px] font-black text-blue-300 uppercase tracking-widest">Supervisor</p>
+                                <p class="text-[10px] font-black text-white">Dr. Mohd. Azri Abd. Jalil</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Layout (Hidden by default) -->
+    <div id="main-app" class="hidden flex flex-col min-h-screen">
+        <!-- Navigation -->
+        <nav class="nav-gradient text-white p-4 shadow-xl flex justify-between items-center sticky top-0 z-[80]">
+            <div class="flex items-center gap-5">
+                <!-- IIUM Logo -->
+                <div class="bg-white p-1.5 rounded-xl shadow-sm">
+                    <img src="logo.png" alt="IIUM Logo" class="w-10 h-10 object-contain" onerror="this.src='https://via.placeholder.com/40x40?text=LOGO'">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-tight leading-none">POPMED</h1>
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] opacity-70 mt-1">Kulliyyah of Nursing</p>
+                </div>
+                <div id="nav-links" class="hidden md:flex gap-6 ml-10">
+                    <button onclick="showSection('dashboard')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Dashboard</button>
+                    <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 1</button>
+                    <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 2</button>
+                    <button onclick="showSection('cabinet3')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Cabinet 3</button>
+                    <button onclick="showSection('inventory')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Inventory</button>
+                    <button onclick="showSection('logs')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Audit Trails</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex flex-col items-end">
+                    <span id="current-user-display" class="text-xs font-bold uppercase tracking-wider text-blue-100"></span>
+                    <span class="text-[9px] font-bold text-blue-300 opacity-60">© Innovation in Nursing 2026</span>
+                </div>
+                <button onclick="logout()" class="bg-white/10 hover:bg-red-500 px-5 py-2 rounded-xl text-xs font-bold transition-all border border-white/20 uppercase tracking-widest">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Mobile Nav -->
+        <div class="md:hidden bg-blue-700 text-white p-2 flex justify-around text-xs overflow-x-auto">
+            <button onclick="showSection('dashboard')" class="px-2 py-1">Dashboard</button>
+            <button onclick="showSection('cabinet1')" class="px-2 py-1">Cab 1</button>
+            <button onclick="showSection('cabinet2')" class="px-2 py-1">Cab 2</button>
+            <button onclick="showSection('cabinet3')" class="px-2 py-1">Cab 3</button>
+            <button onclick="showSection('inventory')" class="px-2 py-1">Stock</button>
+            <button onclick="showSection('logs')" class="px-2 py-1">Logs</button>
+        </div>
+
+        <!-- Content Area -->
+        <main class="flex-grow p-4 md:p-6 overflow-y-auto">
+            
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="space-y-6">
+                <!-- Project Subject Header -->
+                <div class="max-w-7xl mx-auto">
+                    <div class="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 p-10 rounded-[3rem] shadow-2xl border border-blue-500/30 relative overflow-hidden mb-10 group">
+                        <div class="absolute top-0 right-0 p-12 opacity-5 transform translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-1000">
+                            <svg class="w-80 h-80 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+                        </div>
+                        <div class="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                            <div class="flex-shrink-0 relative">
+                                <div class="w-28 h-28 bg-white/10 rounded-[2rem] border border-white/20 flex items-center justify-center backdrop-blur-xl group-hover:rotate-6 transition-transform">
+                                    <img src="logo.png" alt="Logo" class="w-16 h-16 object-contain">
+                                </div>
+                                <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-4 border-slate-900">
+                                    <span class="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                                </div>
+                            </div>
+                            <div class="flex-grow text-center md:text-left">
+                                <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                                    <span class="px-3 py-1 bg-blue-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg">Clinical Informatics Unit</span>
+                                    <span class="px-3 py-1 bg-white/10 text-blue-200 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">Advanced Medication Administration & Documentation System</span>
+                                </div>
+                                <h2 class="text-4xl md:text-5xl font-black text-white tracking-tighter mb-3 leading-none">POPMED Workspace</h2>
+                                <p class="text-xl md:text-2xl font-bold italic text-blue-300 tracking-tight">"Innovation in Nursing: Smart Pharmacological Solutions"</p>
+                                
+                                <div class="mt-8 flex flex-wrap justify-center md:justify-start gap-4">
+                                    <div class="relative flex-grow max-w-sm">
+                                        <input type="text" id="id-band-input" placeholder="Scan Patient MRN to Begin..." class="w-full bg-white/10 border-2 border-white/20 rounded-2xl px-6 py-4 text-white font-black placeholder:text-blue-300/50 focus:ring-4 focus:ring-blue-500/40 focus:bg-white/20 transition-all text-sm">
+                                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                            <span class="text-blue-400 font-black text-[9px] tracking-widest">AWAITING SCAN</span>
+                                        </div>
+                                    </div>
+                                    <button onclick="simulateScan()" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-blue-900/40 transition-all active:scale-95 flex items-center gap-2 group/btn">
+                                        Verify Identity
+                                        <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <svg class="w-16 h-16 text-blue-900" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 9a3 3 0 100-6 3 3 0 000 6zm-7 8a4 4 0 01-8 0v-2a4 4 0 014-4h.5a5.96 5.96 0 001.5 0h.5a4 4 0 014 4v2zM17 11a3 3 0 013 3v2a3 3 0 01-3 3h-6a3 3 0 01-3-3v-2a3 3 0 013-3h6z"></path></svg>
+                        </div>
+                        <h3 class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Patients</h3>
+                        <p id="stat-total-patients" class="text-5xl font-black text-slate-900 tracking-tighter">0</p>
+                        <div class="mt-4 h-1.5 w-12 bg-blue-600 rounded-full"></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <svg class="w-16 h-16 text-yellow-900" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+                        </div>
+                        <h3 class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Pending Meds</h3>
+                        <p id="stat-pending-meds" class="text-5xl font-black text-amber-500 tracking-tighter">0</p>
+                        <div class="mt-4 h-1.5 w-12 bg-amber-500 rounded-full"></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <svg class="w-16 h-16 text-red-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <h3 class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Missed Doses</h3>
+                        <p id="stat-missed-doses" class="text-5xl font-black text-red-600 tracking-tighter">0</p>
+                        <div class="mt-4 h-1.5 w-12 bg-red-600 rounded-full"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                            Safety Alerts
+                        </h3>
+                        <div id="alerts-container" class="max-h-60 overflow-y-auto space-y-2">
+                            <!-- Alerts populated here -->
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-bold mb-4">Quick Actions</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="showSection('cabinet1')" class="p-4 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 font-bold text-center">Add Medication Order</button>
+                            <button onclick="showSection('cabinet2')" class="p-4 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 font-bold text-center">View Cabinet 2</button>
+                            <button onclick="showSection('cabinet3')" class="p-4 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 font-bold text-center">Request IV Solution</button>
+                            <button onclick="showSection('inventory')" class="p-4 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-bold text-center">Check Stock</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cabinet 1 Section -->
+            <section id="cabinet1-section" class="hidden">
+                <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Patient Selection Panel -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                            <h2 class="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                Patient Selection
+                            </h2>
+                            <div class="relative">
+                                <select id="cabinet1-patient-list" onchange="selectPatientForCabinet1(this.value)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none font-medium">
+                                    <option value="">Select a Patient / Bed</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                            
+                            <div id="cabinet1-patient-summary" class="mt-6 hidden space-y-4 animate-fade-in">
+                                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Diagnosis</p>
+                                    <p id="cab1-diagnosis" class="text-sm font-bold text-blue-900 leading-tight"></p>
+                                </div>
+                                <div class="p-4 bg-green-50 rounded-xl border border-green-100">
+                                    <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Clinical Progress</p>
+                                    <p id="cab1-progress" class="text-xs font-medium text-green-800 leading-relaxed italic"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prescribed Medications List -->
+                        <div id="cabinet1-prescribed-panel" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hidden">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Prescribed Medications</h3>
+                            <div id="cabinet1-prescribed-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Global Medication Overview -->
+                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Global Prescriptions</h3>
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-tighter">Ward-wide View</span>
+                            </div>
+                            <div id="cabinet1-global-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Processing Panel -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
+                            <div class="flex justify-between items-start mb-8">
+                                <div>
+                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">Medication Processing</h2>
+                                    <p class="text-sm text-gray-500 font-medium">Process and transfer medications to Cabinet 2</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Check Stock</button>
+                                    <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider">
+                                        Cabinet 1: Automated Order Unit
+                                    </div>
+                                </div>
+                                <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Functional Protocol</p>
+                                    <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
+                                        Cabinet 1 serves as the primary **Digital Prescription Processing Unit**. All physician orders are verified here, linked to patient MRN, and prepared for secure transfer to the physical dispensing unit (Cabinet 2).
+                                    </p>
+                                </div>
+                            </div>
+
+                            <form id="cabinet1-form" class="space-y-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Medication Name</label>
+                                        <select id="order-med-name" onchange="checkDilutionGuidelines(this.value)" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-semibold" required>
+                                            <!-- Populated by JS -->
+                                        </select>
+                                    </div>
+                                    <!-- Dilution Guideline Alert (Hidden by default) -->
+                                    <div id="dilution-guideline-panel" class="md:col-span-2 hidden animate-bounce-slow">
+                                        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 rounded-2xl shadow-xl border border-blue-400 relative overflow-hidden">
+                                            <div class="absolute top-0 right-0 p-4 opacity-10">
+                                                <svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.121L12 11.172 12 12a2 2 0 11-4 0v-.828l.121-.121A3 3 0 009 8.172z" clip-rule="evenodd"></path></svg>
+                                            </div>
+                                            <div class="relative z-10 flex items-start gap-4">
+                                                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                </div>
+                                                <div>
+                                                    <h4 class="text-white font-extrabold uppercase tracking-widest text-[10px] mb-1">Clinical Dilution Protocol</h4>
+                                                    <p id="dilution-text-summary" class="text-blue-50 text-sm font-bold leading-tight"></p>
+                                                    <button type="button" onclick="showFullDilutionProtocol()" class="mt-3 bg-white text-blue-700 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider hover:bg-blue-50 transition-colors shadow-lg">View Full Instructions</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Dose</label>
+                                        <input type="text" id="order-dose" placeholder="e.g. 500mg" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Route</label>
+                                        <select id="order-route" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
+                                            <option>Oral (PO)</option>
+                                            <option>Intravenous (IV)</option>
+                                            <option>Intramuscular (IM)</option>
+                                            <option>Subcutaneous (SC)</option>
+                                            <option>Rectal (PR)</option>
+                                            <option>Sublingual (SL)</option>
+                                            <option>Topical Application</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Frequency</label>
+                                        <select id="order-frequency" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
+                                            <option value="Stat">Stat (Immediately)</option>
+                                            <option value="OD">Once Daily (OD)</option>
+                                            <option value="BD">Twice Daily (BD)</option>
+                                            <option value="TDS">Three Times Daily (TDS)</option>
+                                            <option value="QID">Four Times Daily (QID)</option>
+                                            <option value="PRN">As Needed (PRN)</option>
+                                            <option value="OM">Every Morning (OM)</option>
+                                            <option value="ON">Every Night (ON)</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Time Due</label>
+                                        <input type="datetime-local" id="order-time-due" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button type="submit" class="w-full btn-premium text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-blue-900/20 transition-all">
+                                            TRANSFER TO CABINET 2
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden inputs for auto-populated fields -->
+                                <input type="hidden" id="order-patient-name">
+                                <input type="hidden" id="order-bed-number">
+                                <input type="hidden" id="order-mrn">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cabinet 2 Section -->
+            <section id="cabinet2-section" class="hidden">
+                <div class="max-w-6xl mx-auto">
+                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 mb-8">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 class="text-3xl font-black text-blue-900 tracking-tighter">Cabinet 2: Point-of-Care Dispensing</h2>
+                                <p class="text-sm text-gray-500 font-bold italic">Smart Drawer Medication Management System</p>
+                            </div>
+                            <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">Dispensing Active</div>
+                        </div>
+                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                            <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Functional Protocol</p>
+                            <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
+                                Cabinet 2 is the **Electronic Medication Administration Interface**. It manages the automated release of medications at the bedside. Each drawer is software-locked until verification of **Health Education (HE)** is confirmed, ensuring maximum patient safety.
+                            </p>
+                        </div>
+                    </div>
+                    <div id="cabinet2-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                        <!-- Bed drawers populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cabinet 3 Section -->
+            <section id="cabinet3-section" class="hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
+                        <!-- Decorative element -->
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                        
+                        <div class="relative">
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="bg-purple-100 p-3 rounded-2xl text-purple-600">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-3xl font-extrabold text-purple-900 tracking-tight">Cabinet 3: Sterile IV Storage</h2>
+                                    <p class="text-sm text-gray-500 font-medium italic">Restricted Access • Precision Dilution Control</p>
+                                </div>
+                            </div>
+
+                            <form id="cabinet3-form" class="space-y-6">
+                                <div class="mb-8 p-6 bg-purple-50 rounded-3xl border border-purple-100">
+                                    <p class="text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1">Functional Protocol</p>
+                                    <p class="text-[11px] text-purple-600 font-bold leading-relaxed">
+                                        Cabinet 3 is the **Sterile Compounding & Diluent Storage**. It is specifically designed for the secure storage of IV solutions and diluents. Access is restricted to protocols requiring medication reconstitution and complex IV preparation.
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Target Patient</label>
+                                        <select id="iv-patient-list" onchange="selectPatientForCabinet3(this.value)" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-semibold" required>
+                                            <option value="">Select Patient</option>
+                                            <!-- Populated by JS -->
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Medication to Dilute</label>
+                                        <input type="text" id="iv-med-dilute" oninput="checkCabinet3Dilution(this.value)" placeholder="Enter medication name" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-semibold" required>
+                                    </div>
+                                    <div id="cab3-dilution-info" class="md:col-span-2 hidden">
+                                        <div class="p-4 bg-purple-50 border border-purple-100 rounded-2xl">
+                                            <p class="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">Dilution Protocol Found</p>
+                                            <p id="cab3-dilution-summary" class="text-xs font-bold text-purple-900"></p>
+                                            <button type="button" onclick="showFullDilutionProtocolFromCab3()" class="mt-2 text-[10px] font-extrabold text-purple-700 underline uppercase tracking-wider">View Preparation Steps</button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 md:col-span-2">
+                                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Required IV Solution (Diluent)</label>
+                                        <select id="iv-solution-type" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 transition-all font-bold text-purple-900" required>
+                                            <!-- Populated by JS -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="cabinet3-warning" class="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    <p class="text-xs text-amber-800 font-medium leading-relaxed">
+                                        Confirm that the diluent is compatible with the medication according to the local pharmacopeia. 
+                                        Ensure aseptic technique is maintained during dilution.
+                                    </p>
+                                </div>
+
+                                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-5 rounded-2xl font-bold text-xl shadow-xl hover:shadow-purple-500/30 transform transition-all hover:-translate-y-1 active:scale-95">
+                                    AUTHORIZE & ACCESS CABINET
+                                </button>
+                                
+                                <!-- Hidden inputs -->
+                                <input type="hidden" id="iv-patient-name">
+                                <input type="hidden" id="iv-bed-number">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inventory Section -->
+            <section id="inventory-section" class="hidden">
+                <div class="max-w-7xl mx-auto">
+                    <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 opacity-20"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+                                <div>
+                                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter">Pharmacological Inventory</h2>
+                                    <p class="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs mt-2 italic">Clinical Asset Management & Stock Control</p>
+                                </div>
+                                <div class="flex gap-6">
+                                    <div class="text-center px-6 py-3 bg-slate-50 rounded-3xl border border-slate-100">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total SKU</p>
+                                        <p id="inv-total-sku" class="text-2xl font-black text-slate-900">0</p>
+                                    </div>
+                                    <div class="text-center px-6 py-3 bg-blue-50 rounded-3xl border border-blue-100 relative">
+                                        <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Low Stock Alerts</p>
+                                        <p id="inv-low-alerts" class="text-2xl font-black text-blue-600">0</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50/50 rounded-[2rem] border border-slate-100 overflow-hidden">
+                                <div class="grid grid-cols-12 gap-4 p-6 bg-white border-b border-slate-100">
+                                    <div class="col-span-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Agent</div>
+                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Batch Number</div>
+                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Qty</div>
+                                    <div class="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry Control</div>
+                                    <div class="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Temp</div>
+                                    <div class="col-span-2 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</div>
+                                </div>
+                                <div id="inventory-list" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar">
+                                    <!-- Inventory items populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section id="logs-section" class="hidden">
+                <div class="max-w-6xl mx-auto">
+                    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <h2 class="text-3xl font-extrabold text-blue-900 tracking-tight">System Audit Trails</h2>
+                                <p class="text-sm text-gray-500 font-medium">Immutable verification logs for all pharmacological activities</p>
+                            </div>
+                            <div class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold border border-blue-100">
+                                Total Logs: <span id="audit-count">0</span>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                            <div class="grid grid-cols-12 gap-4 p-4 bg-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b">
+                                <div class="col-span-3">Timestamp</div>
+                                <div class="col-span-2">Authorized Personnel</div>
+                                <div class="col-span-2">Action Type</div>
+                                <div class="col-span-5">Activity Details</div>
+                            </div>
+                            <div id="audit-logs" class="max-h-[600px] overflow-y-auto custom-scrollbar divide-y divide-gray-100">
+                                <!-- Logs populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Patient Record Modal -->
+    <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-blue-800 text-white p-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                <div class="bg-white p-1 rounded-lg shadow-sm">
+                    <img src="logo.png" alt="Logo" class="w-6 h-6 object-contain">
+                </div>
+                <h2 id="modal-patient-name" class="text-xl font-bold">Patient Clinical Record</h2>
+            </div>
+                <button onclick="closePatientModal()" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modal-content" class="p-6 space-y-6">
+                <!-- Content populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="utils.js"></script>
+    <script src="auth.js"></script>
+    <script src="cabinet1.js"></script>
+    <script src="cabinet2.js"></script>
+    <script src="cabinet3.js"></script>
+    <script src="dashboard.js"></script>
+
+    <script>
+        // App Initialization and Routing
+        document.addEventListener('DOMContentLoaded', () => {
+            if (checkAuth()) {
+                showMainApp();
+            } else {
+                showLoginScreen();
+            }
+            populateDropdowns();
+        });
+
+        function showLoginScreen() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('current-user-display').innerText = `${currentUser.role}: ${currentUser.id}`;
+            showSection('dashboard');
+        }
+
+        function showSection(sectionId) {
+            // Hide all sections
+            ['dashboard', 'cabinet1', 'cabinet2', 'cabinet3', 'inventory', 'logs'].forEach(id => {
+                const el = document.getElementById(`${id}-section`);
+                if (el) el.classList.add('hidden');
+            });
+            // Show target section
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+            
+            // Trigger specific section renderers
+            if (sectionId === 'dashboard') updateDashboard();
+            if (sectionId === 'cabinet1') populateCabinet1Patients();
+            if (sectionId === 'cabinet3') populateCabinet3Patients();
+            if (sectionId === 'cabinet2') renderCabinet2();
+            if (sectionId === 'inventory') renderInventory();
+            if (sectionId === 'logs') renderAuditTrails();
+        }
+
+        function simulateScan() {
+            const input = document.getElementById('id-band-input').value.trim();
+            if (!input) {
+                showNotification('Please enter or scan an MRN', 'error');
+                return;
+            }
+
+            const db = getDB();
+            const patient = db.patients.find(p => p.occupied && (p.info.mrn === input || p.info.mrn.includes(input)));
+
+            if (patient) {
+                showNotification(`Patient Verified: ${patient.info.name}`, 'success');
+                openPatientModal(patient.bedNumber);
+                document.getElementById('id-band-input').value = '';
+            } else {
+                showNotification('Patient not found or invalid ID band', 'error');
+            }
+        }
+
+        function populateCabinet1Patients() {
+            const db = getDB();
+            const select = document.getElementById('cabinet1-patient-list');
+            const currentVal = select.value;
+            
+            select.innerHTML = '<option value="">Select a Patient / Bed</option>';
+            db.patients.filter(p => p.occupied).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.bedNumber;
+                opt.innerText = `Bed ${p.bedNumber}: ${p.info.name}`;
+                select.appendChild(opt);
+            });
+            
+            if (currentVal) select.value = currentVal;
+
+            // Populate Global List
+            const globalList = document.getElementById('cabinet1-global-list');
+            globalList.innerHTML = '';
+            
+            db.patients.filter(p => p.occupied).forEach(p => {
+                p.medications.forEach(med => {
+                    if (med.status === 'Pending') {
+                        const div = document.createElement('div');
+                        div.className = 'p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center transition-all hover:border-blue-200 hover:bg-white cursor-pointer';
+                        div.onclick = () => {
+                            select.value = p.bedNumber;
+                            selectPatientForCabinet1(p.bedNumber);
+                            autoFillMedication(med);
+                        };
+                        
+                        div.innerHTML = `
+                            <div class="flex-grow">
+                                <div class="flex items-center gap-2 mb-0.5">
+                                    <span class="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tighter">Bed ${p.bedNumber}</span>
+                                    <p class="text-xs font-bold text-slate-800">${med.name}</p>
+                                </div>
+                                <div class="flex justify-between items-center pr-2">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${p.info.name}</p>
+                                    <p class="text-[9px] text-blue-600 font-black tracking-tighter">${formatDateTime(med.timeDue).split(',')[1]}</p>
+                                </div>
+                            </div>
+                        `;
+                        globalList.appendChild(div);
+                    }
+                });
+            });
+
+            if (globalList.innerHTML === '') {
+                globalList.innerHTML = '<p class="text-center text-slate-300 italic text-[10px] py-10">No pending prescriptions found.</p>';
+            }
+        }
+
+        function selectPatientForCabinet1(bedNumber) {
+            if (!bedNumber) {
+                document.getElementById('cabinet1-patient-summary').classList.add('hidden');
+                document.getElementById('cabinet1-prescribed-panel').classList.add('hidden');
+                return;
+            }
+
+            const db = getDB();
+            const patient = db.patients.find(p => p.bedNumber === parseInt(bedNumber));
+            
+            if (patient) {
+                // Update summary
+                document.getElementById('cab1-diagnosis').innerText = patient.info.diagnosis;
+                document.getElementById('cab1-progress').innerText = patient.info.clinicalProgress;
+                document.getElementById('cabinet1-patient-summary').classList.remove('hidden');
+
+                // Update prescribed list
+                const list = document.getElementById('cabinet1-prescribed-list');
+                list.innerHTML = '';
+                
+                patient.medications.forEach(med => {
+                    const div = document.createElement('div');
+                    div.className = `p-3 rounded-xl border flex justify-between items-center transition-all group hover:bg-gray-50 ${med.status === 'Pending' ? 'border-yellow-200 bg-yellow-50/30' : 'border-gray-100 bg-gray-50/50 opacity-60'}`;
+                    
+                    div.innerHTML = `
+                        <div class="flex-grow cursor-pointer" onclick="autoFillMedication(${JSON.stringify(med).replace(/"/g, '&quot;')})">
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-bold text-gray-800">${med.name}</p>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${med.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-600'}">${med.status}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <p class="text-[10px] text-gray-500 font-medium">${med.dose} • ${med.route} • ${med.frequency} • ${formatDateTime(med.timeDue).split(',')[1]}</p>
+                                ${med.status === 'Pending' && isStaffNurse() ? `
+                                    <button onclick="event.stopPropagation(); promptUpdateTime(${patient.bedNumber}, '${med.id}', '${med.timeDue}')" class="p-1 bg-white/50 rounded-lg hover:bg-white text-blue-600 transition-all opacity-0 group-hover:opacity-100" title="Adjust Time">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <button onclick="directTransferMedication(${JSON.stringify(med).replace(/"/g, '&quot;')})" class="p-2 bg-blue-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 active:scale-90" title="Automatic Transfer to Cabinet 2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+                
+                document.getElementById('cabinet1-prescribed-panel').classList.remove('hidden');
+
+                // Auto-fill hidden inputs
+                document.getElementById('order-patient-name').value = patient.info.name;
+                document.getElementById('order-bed-number').value = patient.bedNumber;
+                document.getElementById('order-mrn').value = patient.info.mrn;
+            }
+        }
+
+        function autoFillMedication(med) {
+            if (med.status !== 'Pending') {
+                showNotification('This medication has already been processed.', 'info');
+                return;
+            }
+            document.getElementById('order-med-name').value = med.name;
+            document.getElementById('order-dose').value = med.dose;
+            document.getElementById('order-route').value = med.route;
+            document.getElementById('order-frequency').value = med.frequency;
+            
+            // Check for dilution guidelines
+            checkDilutionGuidelines(med.name);
+
+            // Set time to now for convenience
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('order-time-due').value = now.toISOString().slice(0, 16);
+            
+            showNotification(`Selected ${med.name} for processing`, 'success');
+        }
+
+        function directTransferMedication(med) {
+            if (med.status !== 'Pending') {
+                showNotification('This medication has already been processed.', 'info');
+                return;
+            }
+            
+            const patientName = document.getElementById('order-patient-name').value;
+            const bedNumber = document.getElementById('order-bed-number').value;
+            const mrn = document.getElementById('order-mrn').value;
+
+            if (!patientName || !bedNumber) {
+                showNotification('Please select a patient first.', 'error');
+                return;
+            }
+
+            const orderData = {
+                patientName: patientName,
+                bedNumber: parseInt(bedNumber),
+                mrn: mrn,
+                medicationName: med.name,
+                dose: med.dose,
+                route: med.route,
+                frequency: med.frequency,
+                timeDue: med.timeDue
+            };
+
+            // Trigger the Cabinet 1 simulation (Roller/Belt) and process automatically
+            window.triggerTransferSimulation(() => {
+                if (window.processOrder(orderData)) {
+                    selectPatientForCabinet1(bedNumber); // Refresh the list
+                    showNotification(`Automatic Transfer Successful: ${med.name} sent to Bed ${bedNumber}`, 'success');
+                }
+            });
+        }
+
+        function checkDilutionGuidelines(medName) {
+            const db = getDB();
+            const protocol = db.medicationProtocols[medName];
+            const panel = document.getElementById('dilution-guideline-panel');
+            const text = document.getElementById('dilution-text-summary');
+
+            if (protocol && (medName.includes('Inj') || medName.includes('IV'))) {
+                text.innerText = `${medName} requires specific clinical protocol: ${protocol.diluent}.`;
+                panel.classList.remove('hidden');
+                panel.dataset.activeMed = medName;
+            } else {
+                panel.classList.add('hidden');
+                panel.dataset.activeMed = '';
+            }
+        }
+
+        function showMedInfo(medName) {
+            const db = getDB();
+            let protocol = db.medicationProtocols[medName];
+            
+            // Advanced Normalization for Matching
+            const normalize = (name) => name.toLowerCase()
+                .replace(/tab|tablet|cap|capsule|inj|injection|iv|susp|suspension|mg|ml|units/g, '')
+                .replace(/[\(\)%\/]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // Fuzzy match if exact match fails
+            if (!protocol) {
+                const keys = Object.keys(db.medicationProtocols);
+                const cleanMedName = normalize(medName);
+                
+                const fuzzyKey = keys.find(k => {
+                    const cleanKey = normalize(k);
+                    return cleanKey === cleanMedName || 
+                           cleanKey.includes(cleanMedName) || 
+                           cleanMedName.includes(cleanKey) ||
+                           k.toLowerCase().includes(medName.toLowerCase()) || 
+                           medName.toLowerCase().includes(k.toLowerCase());
+                });
+                
+                if (fuzzyKey) protocol = db.medicationProtocols[fuzzyKey];
+            }
+
+            if (!protocol) {
+                showNotification(`Clinical Protocol is not available for ${medName}. Please check MIMS/BNF.`, 'info');
+                return;
+            }
+
+            // Create a premium bombastic modal for Protocol & HE
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden transform animate-pop-in border border-white/20">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-10 text-white relative">
+                        <div class="absolute top-0 right-0 p-8 opacity-10">
+                            <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.994 7.994 0 0111 5a7.994 7.994 0 012 1.196V15a7.994 7.994 0 00-2-1.196 7.994 7.994 0 00-2 0V4.804z"></path></svg>
+                        </div>
+                        <div class="relative z-10">
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block backdrop-blur-md">Clinical Monograph</span>
+                            <h2 class="text-4xl font-black tracking-tighter mb-2">${medName}</h2>
+                            <p class="text-blue-200 font-bold text-sm uppercase tracking-widest opacity-80">Safety Protocol & Patient Education</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-10 grid grid-cols-1 md:grid-cols-2 gap-10 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                        <!-- Left: Clinical Protocol & Physical Integrity -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="p-2 bg-blue-100 text-blue-700 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                </div>
+                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Clinical Protocol</h3>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diluent & Volume</p>
+                                    <p class="text-sm font-extrabold text-slate-800">${protocol.diluent} • ${protocol.volume}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Instructions</p>
+                                    <p class="text-xs font-medium text-slate-600 leading-relaxed italic">"${protocol.instructions}"</p>
+                                </div>
+                                
+                                <!-- Physical Integrity Verification -->
+                                <div class="mt-8 p-4 bg-red-50 rounded-2xl border border-red-100">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        <h4 class="text-[10px] font-black text-red-700 uppercase tracking-widest">Integrity Verification</h4>
+                                    </div>
+                                    <p class="text-[9px] font-bold text-red-800 leading-relaxed uppercase tracking-tighter">
+                                        DO NOT ADMINISTER IF:
+                                    </p>
+                                    <ul class="list-disc list-inside text-[9px] font-bold text-red-600 mt-1 space-y-0.5">
+                                        <li>Visible Sedimentation or Cloudiness</li>
+                                        <li>Leakage from Ampoule/Vial/Bag</li>
+                                        <li>Contamination or Discoloration</li>
+                                        <li>Damaged or Compromised Packaging</li>
+                                    </ul>
+                                </div>
+
+                                <div class="p-3 bg-amber-50 rounded-2xl border border-amber-100">
+                                    <p class="text-[9px] font-bold text-amber-800 uppercase tracking-widest mb-1">Stability</p>
+                                    <p class="text-[10px] font-bold text-amber-900">${protocol.stability}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Health Education (HE) -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="p-2 bg-green-100 text-green-700 rounded-xl">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                </div>
+                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Patient Education Hub</h3>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="p-5 bg-green-50 rounded-[2rem] border border-green-100 relative overflow-hidden group/he">
+                                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover/he:scale-110 transition-transform">
+                                        <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>
+                                    </div>
+                                    <p class="text-[10px] font-black text-green-600 uppercase tracking-widest mb-2">Therapeutic Purpose</p>
+                                    <p class="text-sm font-bold text-slate-800 leading-relaxed">${protocol.he.reason}</p>
+                                </div>
+                                
+                                <div class="p-5 bg-red-50 rounded-[2rem] border border-red-100 relative overflow-hidden">
+                                    <p class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Potential Adverse Reactions</p>
+                                    <p class="text-sm font-bold text-slate-800 leading-relaxed">${protocol.he.sideEffects}</p>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button onclick="printHEGuide('${medName}')" class="flex-grow bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Print HE Guide</button>
+                                    <button onclick="showStaffGuide('${medName}')" class="flex-grow bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Staff Nurse HE Guide</button>
+                                </div>
+
+                                <div class="pt-4 border-t border-slate-100">
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Source Citation</p>
+                                    <p class="text-[10px] font-black text-blue-600">${protocol.he.citation || 'Standard Clinical Guidelines'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-10 pt-0">
+                        <button onclick="this.closest('.fixed').remove()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg shadow-2xl hover:bg-slate-800 transition-all transform active:scale-95 uppercase tracking-[0.2em]">Close Monograph</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showFullDilutionProtocol() {
+            const medName = document.getElementById('dilution-guideline-panel').dataset.activeMed;
+            showMedInfo(medName);
+        }
+
+        function populateCabinet3Patients() {
+            const db = getDB();
+            const select = document.getElementById('iv-patient-list');
+            const currentVal = select.value;
+            
+            select.innerHTML = '<option value="">Select Patient</option>';
+            db.patients.filter(p => p.occupied).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.bedNumber;
+                opt.innerText = `Bed ${p.bedNumber}: ${p.info.name}`;
+                select.appendChild(opt);
+            });
+            
+            if (currentVal) select.value = currentVal;
+        }
+
+        function selectPatientForCabinet3(bedNumber) {
+            if (!bedNumber) return;
+            const db = getDB();
+            const patient = db.patients.find(p => p.bedNumber === parseInt(bedNumber));
+            if (patient) {
+                document.getElementById('iv-patient-name').value = patient.info.name;
+                document.getElementById('iv-bed-number').value = patient.bedNumber;
+            }
+        }
+
+        function checkCabinet3Dilution(val) {
+            const db = getDB();
+            const meds = Object.keys(db.medicationProtocols);
+            const found = meds.find(m => m.toLowerCase().includes(val.toLowerCase()) && val.length > 3);
+            const panel = document.getElementById('cab3-dilution-info');
+            const text = document.getElementById('cab3-dilution-summary');
+
+            if (found) {
+                text.innerText = `Protocol available for ${found}.`;
+                panel.classList.remove('hidden');
+                panel.dataset.foundMed = found;
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        function showFullDilutionProtocolFromCab3() {
+            const medName = document.getElementById('cab3-dilution-info').dataset.foundMed;
+            // Use the same function but with medName from Cab 3
+            document.getElementById('dilution-guideline-panel').dataset.activeMed = medName;
+            showFullDilutionProtocol();
+        }
+
+        function showStaffGuide(medName) {
+            showNotification(`Staff Guide for ${medName}: Follow aseptic technique and verify with Charge Nurse.`, 'info');
+        }
+
+        function printHEGuide(medName) {
+            showNotification(`HE Leaflet for ${medName} sent to ward printer.`, 'success');
+        }
+
+        function populateDropdowns() {
+            const db = getDB();
+            
+            // Populate Cabinet 1 Meds
+            const medSelect = document.getElementById('order-med-name');
+            medSelect.innerHTML = '<option value="">Select Medication</option>';
+            const allMeds = [
+                ...db.medications.oral,
+                ...db.medications.iv,
+                ...db.medications.injection,
+                ...db.medications.emergency,
+                ...db.medications.others
+            ].sort();
+            allMeds.forEach(med => {
+                const opt = document.createElement('option');
+                opt.value = med;
+                opt.innerText = med;
+                medSelect.appendChild(opt);
+            });
+
+            // Populate Cabinet 3 Solutions
+            const solSelect = document.getElementById('iv-solution-type');
+            solSelect.innerHTML = '<option value="">Select Solution</option>';
+            db.ivSolutions.forEach(sol => {
+                const opt = document.createElement('option');
+                opt.value = sol;
+                opt.innerText = sol;
+                solSelect.appendChild(opt);
+            });
+        }
+
+        // Form Handlers
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('login-userid').value;
+            const pass = document.getElementById('login-password').value;
+            if (login(id, pass)) {
+                const db = getDB();
+                const user = db.users.find(u => u.id === id);
+                
+                // Show personalized login greeting
+                const welcomeModal = document.createElement('div');
+                welcomeModal.className = 'fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[300] flex items-center justify-center p-6 animate-fade-in';
+                welcomeModal.innerHTML = `
+                    <div class="bg-white rounded-[3rem] p-12 shadow-2xl max-w-sm w-full text-center transform animate-pop-in border border-white/20">
+                        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                            <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <h2 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter">Welcome Back,</h2>
+                        <p class="text-xl font-extrabold text-blue-600 mb-6">${user.id.replace(/_/g, ' ')}</p>
+                        <div class="space-y-4">
+                            <p class="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">Authorized as: ${user.role}</p>
+                            <div class="pt-6">
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                                </div>
+                                <p class="mt-4 text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Initializing Clinical Workspace...</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(welcomeModal);
+
+                // Delay to show greeting before entering app
+                setTimeout(() => {
+                    welcomeModal.remove();
+                    showMainApp();
+                }, 2500);
+            } else {
+                alert('Invalid Credentials');
+            }
+        });
+
+        document.getElementById('cabinet1-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const orderData = {
+                patientName: document.getElementById('order-patient-name').value,
+                bedNumber: document.getElementById('order-bed-number').value,
+                mrn: document.getElementById('order-mrn').value,
+                medicationName: document.getElementById('order-med-name').value,
+                dose: document.getElementById('order-dose').value,
+                route: document.getElementById('order-route').value,
+                frequency: document.getElementById('order-frequency').value,
+                timeDue: document.getElementById('order-time-due').value
+            };
+            
+            if (!orderData.bedNumber) {
+                showNotification('Please select a patient first.', 'error');
+                return;
+            }
+
+            if (processOrder(orderData)) {
+                e.target.reset();
+                selectPatientForCabinet1(orderData.bedNumber); // Refresh lists
+            }
+        });
+
+        document.getElementById('cabinet3-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const requestData = {
+                patientName: document.getElementById('iv-patient-name').value,
+                bedNumber: document.getElementById('iv-bed-number').value,
+                medicationToDilute: document.getElementById('iv-med-dilute').value,
+                solutionType: document.getElementById('iv-solution-type').value
+            };
+            
+            if (!requestData.bedNumber) {
+                showNotification('Please select a patient first.', 'error');
+                return;
+            }
+
+            if (requestIVAccess(requestData)) {
+                e.target.reset();
+            }
+        });
+
+        // Auto-refresh alerts every minute
+        setInterval(updateDashboard, 60000);
+    </script>
+
+    <!-- Simulation Overlays -->
+    <div id="drawer-simulation" class="simulation-overlay">
+        <div class="text-center mb-8">
+            <h2 id="drawer-title" class="text-3xl font-black uppercase tracking-[0.2em] text-blue-400 mb-2">Cabinet Access</h2>
+            <p id="drawer-timer-text" class="text-sm font-bold text-slate-400 uppercase tracking-widest">Please proceed in 10 seconds</p>
+        </div>
+        
+        <div class="relative flex items-center justify-center">
+            <!-- Hand emojis for animations -->
+            <div id="hand-take-emoji" class="hand-take">🫳</div>
+            <div id="hand-put-emoji" class="hand-put">🫴</div>
+
+            <div id="drawer-anim-container" class="drawer-animation">
+                <div class="drawer-content-sim flex items-center justify-center text-3xl">💊</div>
+                <div class="drawer-front">
+                    <div class="drawer-handle"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="drawer-countdown" class="mt-8 text-6xl font-black text-white font-mono">10</div>
+    </div>
+
+    <div id="transfer-simulation" class="simulation-overlay">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-black uppercase tracking-[0.2em] text-blue-400 mb-2">Transferring to Cabinet 2</h2>
+            <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Digital Order Processing In Progress...</p>
+        </div>
+        
+        <!-- Roller/Belt simulation with med emoji -->
+        <div class="relative flex flex-col items-center">
+            <div class="med-emoji-transfer">📦</div>
+            <div class="roller-container">
+                <div class="roller-belt">
+                    <span>⚙️</span><span>⚙️</span><span>⚙️</span><span>⚙️</span><span>⚙️</span><span>⚙️</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-64 h-2 bg-slate-800 rounded-full overflow-hidden mt-12">
+            <div id="transfer-progress-bar" class="w-0 h-full bg-blue-500 transition-all duration-300"></div>
+        </div>
+    </div>
+
+    <div id="prep-simulation" class="simulation-overlay">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-black uppercase tracking-[0.2em] text-green-400 mb-2">Cabinet 3: IV Preparation</h2>
+            <p id="prep-status-text" class="text-sm font-bold text-slate-400 uppercase tracking-widest">Preparing Clinical Dilution...</p>
+        </div>
+        <div class="relative w-48 h-48 mb-8">
+            <svg class="w-full h-full transform -rotate-90">
+                <circle cx="96" cy="96" r="88" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-800" />
+                <circle id="prep-progress-circle" cx="96" cy="96" r="88" stroke="currentColor" stroke-width="12" fill="transparent" stroke-dasharray="553" stroke-dashoffset="553" class="text-green-500 transition-all duration-300" />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-16 h-16 text-green-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+        <p id="prep-item-text" class="text-lg font-black text-white text-center italic"></p>
+    </div>
+</body>
+</html>
