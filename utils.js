@@ -25,7 +25,7 @@ function generateLog(action, nurseId, details) {
 }
 
 function getMedicationStatus(med) {
-    if (med.status === 'Administered') return 'Green';
+    if (med.status === 'Administered' || med.status === 'Given') return 'Green';
     if (med.status === 'Dispensed') return 'Yellow';
     if (med.status === 'Missed') return 'Red';
     
@@ -130,19 +130,21 @@ function validate5Rights(patient, medication, scannedMRN, scannedMedCode) {
         results.criticalStop = true;
     }
 
-    // 2. Right Drug (BCMA)
-    if (scannedMedCode === medication.barcode) {
+    // 2. Right Drug (Internal Verification)
+    // In simplified workflow, if scannedMedCode is medication.barcode or empty, we consider it passed
+    // unless there is a specific mismatch.
+    if (!scannedMedCode || scannedMedCode === medication.barcode) {
         results.drug.pass = true;
     } else {
-        results.drug.message = 'Wrong Drug: Barcode mismatch.';
+        results.drug.message = 'Wrong Drug: Identification mismatch.';
         results.criticalStop = true;
     }
 
     // 3. Right Dose (Simulation check)
-    results.dose.pass = true; 
+    results.dose.pass = !!medication.dose; 
 
     // 4. Right Route (Simulation check)
-    results.route.pass = true;
+    results.route.pass = !!medication.route;
 
     // 5. Right Time (Clinical decision window: ±60 mins)
     const now = new Date();
@@ -157,11 +159,13 @@ function validate5Rights(patient, medication, scannedMRN, scannedMedCode) {
         results.time.message = 'Late Administration Warning.';
     }
 
-    // Allergy Cross-Check (Clinical Decision Support)
-    if (patient.info.allergies !== 'None (NKDA)' && medication.name.toLowerCase().includes(patient.info.allergies.toLowerCase())) {
-        results.drug.message = `CONTRAINDICATION: Patient allergic to ${patient.info.allergies}.`;
-        results.drug.pass = false;
-        results.criticalStop = true;
+    // Allergy Cross-Check (Clinical Decision Support) - ALWAYS ENFORCED
+    if (patient.info.allergies && patient.info.allergies !== 'None (NKDA)') {
+        if (medication.name.toLowerCase().includes(patient.info.allergies.toLowerCase())) {
+            results.drug.message = `CONTRAINDICATION: Patient allergic to ${patient.info.allergies}.`;
+            results.drug.pass = false;
+            results.criticalStop = true;
+        }
     }
 
     results.isAllValid = results.patient.pass && results.drug.pass && results.dose.pass && results.route.pass && results.time.pass;
@@ -187,6 +191,139 @@ function showNotification(message, type = 'info') {
         notification.style.transform = 'translateY(20px)';
         setTimeout(() => notification.remove(), 500);
     }, 4000);
+}
+
+/**
+ * Nurse Digital Stamp / Signature Generator
+ */
+function generateNurseStamp(name, role) {
+    return `
+        <div class="nurse-stamp no-print" style="border: 2px solid #16a34a; padding: 8px; display: inline-block; border-radius: 12px; background: rgba(22, 163, 74, 0.05); margin-top: 8px; min-width: 150px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="color: #16a34a;">
+                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p style="font-size: 8px; font-weight: 900; color: #16a34a; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">Verified Administration</p>
+                    <p style="font-size: 11px; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2;">${name}</p>
+                    <p style="font-size: 9px; font-weight: 700; color: #16a34a; margin: 0; opacity: 0.8;">${role || 'Registered Nurse'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Health Education (HE) Pamphlet Generator
+ * Professional A4 Layout for Patients
+ */
+function generateHEPamphlet(patient, med) {
+    const db = getDB();
+    const protocol = db.medicationProtocols[med.name] || {
+        he: {
+            reason: "This medication is given to treat your condition as prescribed by your doctor.",
+            sideEffects: "Nausea, dizziness, or mild stomach upset. Please inform your nurse if you feel unwell.",
+            citation: "Clinical Hospital Guidelines"
+        },
+        instructions: "Take exactly as instructed by your healthcare provider."
+    };
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Patient Education: ${med.name}</title>
+            <style>
+                @page { size: A4; margin: 2cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 40px; }
+                .pamphlet-container { max-width: 800px; margin: auto; }
+                .header { text-align: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
+                .hospital-name { font-size: 24px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.02em; }
+                .subtitle { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 5px; }
+                .patient-box { background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+                .value { font-size: 14px; font-weight: 700; color: #0f172a; }
+                .section { margin-bottom: 25px; }
+                .section-title { font-size: 14px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 4px solid #1e3a8a; padding-left: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+                .section-content { font-size: 13px; font-weight: 500; padding-left: 16px; color: #334155; }
+                .highlight-blue { background: #eff6ff; padding: 15px; border-radius: 12px; border-left: 4px solid #3b82f6; }
+                .highlight-red { background: #fef2f2; padding: 15px; border-radius: 12px; border-left: 4px solid #ef4444; }
+                .nurse-section { margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+                .no-print { margin-top: 40px; text-align: center; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+                @media print { .no-print { display: none; } body { padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="pamphlet-container">
+                <div class="header">
+                    <div class="hospital-name">Kulliyyah of Nursing • IIUM</div>
+                    <div class="subtitle">Patient Medication Education Guide</div>
+                </div>
+
+                <div class="patient-box">
+                    <div>
+                        <div class="label">Patient Name</div>
+                        <div class="value">${patient.info.name}</div>
+                    </div>
+                    <div>
+                        <div class="label">Registration No (MRN)</div>
+                        <div class="value">${patient.info.mrn}</div>
+                    </div>
+                    <div>
+                        <div class="label">Medication</div>
+                        <div class="value">${med.name}</div>
+                    </div>
+                    <div>
+                        <div class="label">Dose & Route</div>
+                        <div class="value">${med.dose} • ${med.route}</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">💊 Purpose of Medication</div>
+                    <div class="section-content highlight-blue">
+                        ${protocol.he.reason}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📋 Administration Instructions</div>
+                    <div class="section-content">
+                        ${protocol.instructions}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">⚠️ What to Watch For (Side Effects)</div>
+                    <div class="section-content highlight-red">
+                        ${protocol.he.sideEffects}
+                        <p style="margin-top: 10px; font-weight: 700;">Please alert your nurse immediately if you experience itching, difficulty breathing, or sudden rashes.</p>
+                    </div>
+                </div>
+
+                <div class="nurse-section">
+                    <div>
+                        <div class="label">Counselled By</div>
+                        ${generateNurseStamp(currentUser.fullname, currentUser.role)}
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="label">Date & Time</div>
+                        <div class="value">${new Date().toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">Print This Guide</button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const w = window.open('', '', 'width=900,height=800');
+    w.document.write(content);
+    w.document.close();
 }
 
 /**

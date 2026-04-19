@@ -1022,71 +1022,102 @@
 
         function printMedicationSheet(patient) {
             const content = `
-                <div style="font-family: sans-serif; padding: 40px; max-width: 800px; margin: auto; border: 1px solid #eee;">
-                    <div style="display: flex; justify-between; align-items: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; mb: 20px;">
+                <div class="print-container" style="font-family: 'Segoe UI', sans-serif; padding: 40px; max-width: 900px; margin: auto; border: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 20px;">
                         <div>
-                            <h1 style="color: #1e3a8a; margin: 0;">Medication Administration Record</h1>
-                            <p style="color: #64748b; margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase; font-size: 12px;">IIUM Kulliyyah of Nursing • POPMED System</p>
+                            <h1 style="color: #1e3a8a; margin: 0; font-size: 28px; font-weight: 900;">MEDICATION ADMINISTRATION RECORD (eMAR)</h1>
+                            <p style="color: #64748b; margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">IIUM Kulliyyah of Nursing • Clinical Legal Documentation</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0;">Report Type</p>
+                            <p style="font-size: 12px; font-weight: 900; color: #1e3a8a; margin: 0;">LEGAL AUDIT LOG</p>
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                        <div>
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">Patient Name</p>
-                            <p style="font-size: 16px; font-weight: bold; margin: 5px 0;">${patient.info.name}</p>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 30px 0; padding: 25px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">Patient Name</p>
+                                <p style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 4px 0;">${patient.info.name}</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">MRN / Registration No</p>
+                                <p style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 4px 0;">${patient.info.mrn}</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">Location</p>
+                                <p style="font-size: 14px; font-weight: 700; color: #334155; margin: 4px 0;">Bed Unit ${patient.bedNumber}</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">Attending Clinician</p>
+                                <p style="font-size: 14px; font-weight: 700; color: #334155; margin: 4px 0;">${patient.info.doctor}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">MRN / Registration No</p>
-                            <p style="font-size: 16px; font-weight: bold; margin: 5px 0;">${patient.info.mrn}</p>
-                        </div>
-                        <div>
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">Bed Number</p>
-                            <p style="font-size: 14px; font-weight: bold; margin: 5px 0;">Bed ${patient.bedNumber}</p>
-                        </div>
-                        <div>
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">Report Generated</p>
-                            <p style="font-size: 14px; font-weight: bold; margin: 5px 0;">${new Date().toLocaleString()}</p>
+                        <div style="border-left: 1px solid #e2e8f0; padding-left: 20px; text-align: right;">
+                            <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">Allergies</p>
+                            <p style="font-size: 14px; font-weight: 900; color: #ef4444; margin: 4px 0;">${patient.info.allergies || 'None (NKDA)'}</p>
+                            <p style="font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 15px 0 0 0;">Report Date</p>
+                            <p style="font-size: 12px; font-weight: 700; color: #0f172a; margin: 4px 0;">${new Date().toLocaleString()}</p>
                         </div>
                     </div>
 
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                         <thead>
                             <tr style="background: #1e3a8a; color: white;">
-                                <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Medication</th>
-                                <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Dose / Route</th>
-                                <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Scheduled</th>
-                                <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Status</th>
+                                <th style="padding: 15px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">Medication Details</th>
+                                <th style="padding: 15px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">Scheduled</th>
+                                <th style="padding: 15px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">Administered</th>
+                                <th style="padding: 15px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 900;">Clinical Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${patient.medications.map(m => `
-                                <tr style="border-bottom: 1px solid #e2e8f0;">
-                                    <td style="padding: 12px; font-size: 13px; font-weight: bold;">${m.name}</td>
-                                    <td style="padding: 12px; font-size: 12px;">${m.dose} • ${m.route}</td>
-                                    <td style="padding: 12px; font-size: 12px;">${new Date(m.timeDue).toLocaleString()}</td>
-                                    <td style="padding: 12px; font-size: 11px; font-weight: bold; color: ${m.status === 'Administered' ? '#10b981' : '#f59e0b'};">
-                                        ${m.status.toUpperCase()}
-                                        ${m.timeAdministered ? `<br><span style="font-size: 9px; color: #64748b; font-weight: normal;">at ${new Date(m.timeAdministered).toLocaleTimeString()}</span>` : ''}
+                            ${patient.medications.map(m => {
+                                const isGiven = m.status === 'Given' || m.status === 'Administered';
+                                return `
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: ${isGiven ? 'white' : '#fffbeb'};">
+                                    <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
+                                        <p style="font-size: 13px; font-weight: 800; margin: 0; color: #0f172a;">${m.name}</p>
+                                        <p style="font-size: 11px; font-weight: 600; color: #64748b; margin: 4px 0 0 0;">${m.dose} • ${m.route} • ${m.frequency}</p>
+                                    </td>
+                                    <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
+                                        <p style="font-size: 11px; font-weight: 700; color: #334155; margin: 0;">${new Date(m.timeDue).toLocaleString()}</p>
+                                    </td>
+                                    <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
+                                        ${m.timeAdministered ? `
+                                            <p style="font-size: 11px; font-weight: 800; color: #0f172a; margin: 0;">${new Date(m.timeAdministered).toLocaleString()}</p>
+                                            <p style="font-size: 9px; font-weight: 700; color: #16a34a; margin: 4px 0 0 0; text-transform: uppercase;">By: ${m.nurseName || 'Authorized Nurse'}</p>
+                                        ` : '<p style="font-size: 11px; font-weight: 600; color: #94a3b8; font-style: italic;">Not Administered</p>'}
+                                    </td>
+                                    <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; background: ${isGiven ? '#dcfce7' : '#fef3c7'}; color: ${isGiven ? '#166534' : '#92400e'};">
+                                            ${m.status === 'Given' ? 'ADMINISTERED' : m.status.toUpperCase()}
+                                        </span>
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `}).join('')}
                         </tbody>
                     </table>
                     
-                    <div style="margin-top: 50px; border-top: 1px solid #eee; pt: 20px; display: flex; justify-between;">
-                        <div>
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">System Verification</p>
-                            <p style="font-size: 11px; font-weight: bold; margin: 5px 0;">Digitally Signed by POPMED</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <p style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0;">Nurse Signature</p>
-                            <div style="height: 40px; border-bottom: 1px solid #ccc; width: 150px; margin-left: auto;"></div>
+                    <div style="margin-top: 50px; padding: 30px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div style="flex: 1;">
+                                <p style="font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0;">System Verification</p>
+                                <p style="font-size: 11px; font-weight: 700; color: #1e3a8a; margin: 8px 0;">DIGITALLY SECURED BY POPMED SYSTEM</p>
+                                <p style="font-size: 9px; color: #94a3b8; font-weight: 600;">Certificate ID: POP-eMAR-${Date.now()}</p>
+                            </div>
+                            <div style="flex: 1; text-align: right;">
+                                <p style="font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 0 0 10px 0;">Official eMAR Verification</p>
+                                <div style="display: inline-block; border: 2px solid #16a34a; padding: 10px 20px; border-radius: 12px; text-align: center;">
+                                    <p style="font-size: 8px; font-weight: 900; color: #16a34a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.1em;">Legal Signature</p>
+                                    <p style="font-size: 14px; font-weight: 900; color: #0f172a; margin: 0;">ELECTRONICALLY FILED</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            const w = window.open('', '', 'width=900,height=800');
+            const w = window.open('', '', 'width=1000,height=900');
             w.document.write(`<html><head><title>eMAR - ${patient.info.name}</title></head><body onload="window.print()">${content}</body></html>`);
             w.document.close();
         }

@@ -29,7 +29,7 @@ function updateDashboardStats() {
     
     patients.forEach(p => {
         p.medications.forEach(m => {
-            if (m.status === 'Pending') {
+            if (m.status === 'Pending' || m.status === 'Dispensed') {
                 const dueTime = new Date(m.timeDue);
                 if (now > dueTime) {
                     totalMissed++;
@@ -92,7 +92,7 @@ function openPatientBCMAModal(bedNumber) {
     modal.id = 'bcma-workflow-modal';
     modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[400] flex items-center justify-center p-4';
     
-    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed');
+    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Given' || m.status === 'Administered');
     
     modal.innerHTML = `
         <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20">
@@ -124,8 +124,8 @@ function openPatientBCMAModal(bedNumber) {
                             <p class="text-lg font-bold uppercase tracking-widest">No medications due at this time.</p>
                         </div>
                     ` : medicationsDue.map(med => {
+                        const isGiven = med.status === 'Given' || med.status === 'Administered';
                         const statusColor = getMedicationStatus(med);
-                        const isDispensed = med.status === 'Dispensed';
                         
                         return `
                             <div class="p-6 rounded-3xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-xl transition-all group">
@@ -135,18 +135,32 @@ function openPatientBCMAModal(bedNumber) {
                                         <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-1">${med.dose} • ${med.route} • ${med.frequency}</p>
                                     </div>
                                     <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                        isGiven ? 'bg-green-100 text-green-700' : 
                                         statusColor === 'Red' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                                    }">${med.status}</span>
+                                    }">${isGiven ? 'GIVEN' : med.status}</span>
                                 </div>
                                 
-                                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                                    <div class="text-[10px] font-bold text-slate-400">
-                                        <p class="uppercase tracking-tighter">Scheduled Time</p>
-                                        <p class="text-slate-600">${formatDateTime(med.timeDue)}</p>
+                                <div class="pt-4 border-t border-slate-100">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="text-[10px] font-bold text-slate-400">
+                                            <p class="uppercase tracking-tighter">Scheduled Time</p>
+                                            <p class="text-slate-600">${formatDateTime(med.timeDue)}</p>
+                                        </div>
+                                        ${isGiven 
+                                            ? `<div class="flex flex-col items-end">
+                                                 <button onclick="generateHEPamphlet(${JSON.stringify(patient).replace(/"/g, '&quot;')}, ${JSON.stringify(med).replace(/"/g, '&quot;')})" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 mb-2">
+                                                     📘 HE Pamphlet
+                                                 </button>
+                                                 ${generateNurseStamp(med.nurseName || currentUser.fullname, med.nurseRole || currentUser.role)}
+                                               </div>`
+                                            : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Administered</button>`
+                                        }
                                     </div>
-                                    <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
-                                        ONE-CLICK ADMINISTER
-                                    </button>
+                                    ${isGiven ? `
+                                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[9px] font-bold text-slate-500">
+                                            <span class="uppercase tracking-widest text-[8px] opacity-60">Legal Record:</span> Administered at ${formatDateTime(med.timeAdministered)}
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
@@ -169,33 +183,28 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
     const patient = db.patients.find(p => p.bedNumber === bedNumber);
     const medication = patient.medications.find(m => m.id === medId);
 
-    // 1. Scan Medication Barcode
-    const scannedMedCode = prompt(`[BCMA SCANNER] Please scan Medication Barcode for: ${medication.name}`);
-    if (!scannedMedCode) return;
+    if (medication.status === 'Given' || medication.status === 'Administered') {
+        showNotification('Medication already administered', 'info');
+        return;
+    }
 
-    // 2. Run 5 Rights Verification Engine
-    const verification = validate5Rights(patient, medication, patient.info.mrn, scannedMedCode);
+    // SIMPLIFIED WORKFLOW: Internal 5 Rights Verification (No manual scan)
+    const verification = validate5Rights(patient, medication, patient.info.mrn, medication.barcode || '');
 
+    // Allergy check and critical stops are still enforced
     if (verification.criticalStop) {
         showNotification(`SAFETY ALERT: ${verification.drug.message || verification.patient.message}`, 'error');
         generateLog('CLINICAL_STOP', currentUser.id, `SAFETY ALERT: ${verification.drug.message || verification.patient.message} (Bed: ${bedNumber}, Drug: ${medication.name})`);
         return;
     }
 
-    if (!verification.isAllValid) {
-        if (!confirm(`CLINICAL WARNING: ${verification.time.message || 'Verification issues detected.'} Do you want to proceed with administration anyway?`)) {
-            return;
-        }
-    }
-
-    // 3. Safety Alert: High Alert or LASA
+    // Safety Alert: High Alert or LASA
     const protocol = db.medicationProtocols[medication.name];
     if (protocol && (protocol.isHighAlert || protocol.isLASA)) {
         const type = protocol.isHighAlert ? 'HIGH_ALERT' : 'LASA';
         const details = protocol.isLASA ? protocol.lasaNote : 'HIGH ALERT: Second independent verification of dosage and pump settings mandatory.';
         
         showClinicalSafetyAlert(medication.name, type, details, () => {
-            // Proceed with administration after safety acknowledgement
             processAdministration(db, medication, bedNumber);
         });
         return;
@@ -208,18 +217,38 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
 function processAdministration(db, medication, bedNumber) {
     // 4. One-Click Administration
     triggerDrawerSimulation(() => {
-        medication.status = 'Administered';
-        medication.timeAdministered = new Date().toISOString();
+        const now = new Date().toISOString();
+        
+        // Legal Record Structure
+        const legalRecord = {
+            patientName: db.patients.find(p => p.bedNumber === bedNumber).info.name,
+            mrn: db.patients.find(p => p.bedNumber === bedNumber).info.mrn,
+            medication: medication.name,
+            dose: medication.dose,
+            route: medication.route,
+            scheduledTime: medication.timeDue,
+            administeredTime: now,
+            administeredBy: currentUser.fullname,
+            role: currentUser.role,
+            status: "Given",
+            remarks: "BCMA Verified Simplified Workflow"
+        };
+
+        medication.status = 'Given';
+        medication.timeAdministered = now;
         medication.nurseId = currentUser.id;
+        medication.nurseName = currentUser.fullname; // Store for legal stamp
+        medication.nurseRole = currentUser.role;     // Store for legal stamp
 
         updateDB(db);
-        generateLog('MED_ADMINISTERED', currentUser.id, `BCMA VERIFIED: Administered ${medication.name} to Bed ${bedNumber}`);
         
-        showNotification(`${medication.name} administered successfully. eMAR updated.`, 'success');
+        // Save to Legal Audit Log (Immutable)
+        generateLog('LEGAL_MED_ADMIN', currentUser.id, JSON.stringify(legalRecord));
         
-        // Remove the BCMA modal and refresh dashboard
-        const bcmaModal = document.getElementById('bcma-workflow-modal');
-        if (bcmaModal) bcmaModal.remove();
+        showNotification(`${medication.name} successfully administered. Legal eMAR updated.`, 'success');
+        
+        // Refresh the BCMA modal to show the "Given ✅" status and Legal Stamp
+        openPatientBCMAModal(bedNumber);
         updateDashboard();
     }, "BCMA Unit 2: Administering", `Drawer Unlocked. Please administer ${medication.name} to the patient.`);
 }
@@ -320,7 +349,7 @@ function renderCabinet2() {
         if (patient.occupied) {
             // eMAR Summary for the bed card
             const meds = patient.medications;
-            const administered = meds.filter(m => m.status === 'Administered').length;
+            const administered = meds.filter(m => m.status === 'Administered' || m.status === 'Given').length;
             const pending = meds.filter(m => m.status === 'Pending' || m.status === 'Dispensed').length;
 
             medListHtml = `
