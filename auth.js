@@ -117,6 +117,10 @@ window.isAuthorizedForAction = function(actionType) {
             // Only Registered Nurses and Advanced Practitioners can administer medications
             return ['Nurse', 'Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
             
+        case 'MED_DISPENSING':
+            // Security Update: Doctors, Nurses, and Pharmacists are all authorized to dispense from ADC
+            return ['Medical Doctor', 'Nurse', 'Pharmacist', 'Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
+            
         case 'TIMING_ADJUSTMENT':
             // Only Senior Nursing staff can adjust clinical schedules
             return window.isStaffNurse();
@@ -124,6 +128,10 @@ window.isAuthorizedForAction = function(actionType) {
         case 'PRESCRIPTION_ORDER':
             // ONLY Medical Doctors can issue new prescriptions. Generic "Doctor" role is blocked.
             return role === 'Medical Doctor';
+            
+        case 'IV_PREPARATION':
+            // Authorized for Doctors, Nurses, and Advanced Practitioners
+            return ['Medical Doctor', 'Nurse', 'Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
             
         case 'CONTROLLED_DRUG_ACCESS':
             // Requires double-verification or senior nursing role

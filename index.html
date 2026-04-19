@@ -1091,7 +1091,7 @@
             
             // UI Access Control logic
             const isAdmin = userRole === 'Admin';
-            const isDoctor = userRole === 'Doctor';
+            const isMedicalDoctor = userRole === 'Medical Doctor';
             const isNurse = userRole === 'Nurse';
             const isPharmacist = userRole === 'Pharmacist';
 
@@ -1099,6 +1099,8 @@
             const navButtons = document.querySelectorAll('nav button, .md\\:hidden button');
             navButtons.forEach(btn => {
                 const action = btn.getAttribute('onclick');
+                if (!action) return;
+
                 if (action.includes('inventory') && !isPharmacist && !isAdmin) {
                     btn.classList.add('opacity-30');
                     btn.title = "Access restricted to Pharmacy/Admin";
@@ -1111,7 +1113,8 @@
 
             const transferForm = document.getElementById('cabinet1-form');
 
-            if (!isDoctor && !isAdmin) {
+            // Security Fix: Allow Medical Doctor and Admin to dispense medication from ADC Unit 1
+            if (!isMedicalDoctor && !isAdmin && !isNurse && !isPharmacist) {
                 if (transferForm) {
                     const inputs = transferForm.querySelectorAll('input, select, button[type="submit"]');
                     inputs.forEach(input => input.disabled = true);
@@ -1120,7 +1123,7 @@
                         const notice = document.createElement('div');
                         notice.id = 'role-notice';
                         notice.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-bold text-center';
-                        notice.innerHTML = 'RESTRICTED ACCESS: Medication dispensing authorization is reserved for Doctors only.';
+                        notice.innerHTML = 'RESTRICTED ACCESS: Medication dispensing authorization is reserved for Clinical Staff.';
                         transferForm.appendChild(notice);
                     }
                 }

@@ -2,6 +2,14 @@
 
 function dispenseMedication(bedNumber, medId) {
     const db = getDB();
+
+    // Security Verification: Authorized for Dispensing
+    if (!isAuthorizedForAction('MED_DISPENSING')) {
+        showNotification('SECURITY DENIED: Your role is not authorized for medication dispensing.', 'error');
+        generateLog('SECURITY_VIOLATION', currentUser.id, `Unauthorized dispensing attempt (Bed ${bedNumber})`);
+        return false;
+    }
+
     const patient = db.patients.find(p => p.bedNumber === bedNumber);
     const med = patient.medications.find(m => m.id === medId);
 

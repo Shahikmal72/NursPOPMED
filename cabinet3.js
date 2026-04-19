@@ -2,6 +2,14 @@
 
 function requestIVAccess(requestData) {
     const db = getDB();
+
+    // Security Verification: Authorized for IV Preparation
+    if (!isAuthorizedForAction('IV_PREPARATION')) {
+        showNotification('SECURITY DENIED: Your role is not authorized for IV medication preparation.', 'error');
+        generateLog('SECURITY_VIOLATION', currentUser.id, `Unauthorized IV prep attempt for ${requestData.medicationToDilute} (Bed ${requestData.bedNumber})`);
+        return false;
+    }
+
     const solutionItem = findInventoryItem(db, requestData.solutionType);
 
     if (!solutionItem) {

@@ -4,6 +4,14 @@
  */
 function handleCabinet1Submit(orderData) {
     const db = getDB();
+
+    // Security Verification: Authorized for Dispensing
+    if (!isAuthorizedForAction('MED_DISPENSING')) {
+        showNotification('SECURITY DENIED: Your role is not authorized for medication dispensing.', 'error');
+        generateLog('SECURITY_VIOLATION', currentUser.id, `Unauthorized dispensing attempt for ${orderData.medicationName} (Bed ${orderData.bedNumber})`);
+        return false;
+    }
+
     const inventoryItem = findInventoryItem(db, orderData.medicationName);
 
     if (!inventoryItem || inventoryItem.quantity <= 0) {
