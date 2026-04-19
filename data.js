@@ -87,7 +87,7 @@ const initialData = {
         'Assoc. Prof. Dr. Syamsul Ahmad Arifin',
         'Dr. Mohd Azri Abd Jalil',
         'Dr. Sarah Zulifli',
-        'Dr. Shidqiyyah Abd Hamid (Specialist)',
+        'Dr. Shidqiyyah Abd Hamid',
         'Dr. Azmir Ahmad',
         'Assoc. Prof. Dr. Siti Noorkhairina Binti Sowtali',
         'Assoc. Prof. Dr. Sanisah Saidi',
@@ -696,8 +696,11 @@ function updateDB(data) {
 
 // Helper to force reset database if needed
 function hardResetDB() {
-    localStorage.removeItem('popmed_db');
-    location.reload();
+    if (confirm('CRITICAL: This will erase all patient records, logs, and custom inventory settings. The system will restore clinical defaults. Proceed?')) {
+        localStorage.clear(); // Clear everything including session data
+        sessionStorage.clear();
+        location.reload();
+    }
 }
 
 initializeDB();

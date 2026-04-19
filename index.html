@@ -846,17 +846,20 @@
         }
 
         function confirmHardReset() {
-            if (confirm('CAUTION: This will reset all clinical data, logs, and inventory to system defaults. This is usually only needed if you are experiencing data synchronization issues. Proceed?')) {
-                if (typeof hardResetDB === 'function') {
-                    hardResetDB();
-                } else {
-                    localStorage.removeItem('popmed_db');
+            if (typeof hardResetDB === 'function') {
+                hardResetDB();
+            } else {
+                if (confirm('CAUTION: This will reset all clinical data. Proceed?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
                     location.reload();
                 }
             }
         }
 
         function showMainApp() {
+            const db = getDB();
+            
             if (!currentUser) {
                 const savedUser = sessionStorage.getItem('popmed_user');
                 if (savedUser) {
@@ -865,6 +868,13 @@
                     showLoginScreen();
                     return;
                 }
+            }
+
+            // Sync currentUser with latest DB data (in case roles or names changed in data.js)
+            const latestUserData = db.users.find(u => u.id === currentUser.id);
+            if (latestUserData) {
+                currentUser = latestUserData;
+                sessionStorage.setItem('popmed_user', JSON.stringify(currentUser));
             }
             
             document.getElementById('login-screen').classList.add('hidden');
