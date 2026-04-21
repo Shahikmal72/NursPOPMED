@@ -698,10 +698,13 @@
                         <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
                             <div class="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                                 <div>
-                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">ADC Unit 1: Medication Dispensing</h2>
-                                    <p class="text-sm text-gray-500 font-medium italic">Authorized dispensing for patient-specific orders</p>
+                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">ADC Unit 1: Medication Management</h2>
+                                    <p class="text-sm text-gray-500 font-medium italic">Authorized dispensing & clinical prescribing console</p>
                                 </div>
                                 <div class="flex gap-2">
+                                    <button id="btn-new-prescription" type="button" onclick="togglePrescriptionView()" class="hidden bg-indigo-600 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                                        + New Prescription
+                                    </button>
                                     <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Inventory Management</button>
                                     <div class="bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
                                         ADC UNIT 1
@@ -714,6 +717,74 @@
                                     Select an order from the **Available Medications** list to initiate the automated dispensing sequence.
                                 </p>
                             </div>
+
+                                <!-- NEW PRESCRIPTION FORM (Visible to Doctors) -->
+                                <div id="prescription-view" class="hidden animate-fade-in space-y-6">
+                                    <div class="p-6 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 relative overflow-hidden">
+                                        <div class="flex justify-between items-center mb-6">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-sm font-black text-indigo-900 uppercase tracking-widest">Clinical Prescription Module</h3>
+                                                    <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-1">Authorized Medical Order</p>
+                                                </div>
+                                            </div>
+                                            <div id="doctor-stamp-container">
+                                                <!-- Auto-populated doctor stamp -->
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Medication Agent</label>
+                                                <select id="prescribe-med-name" class="w-full px-5 py-3.5 bg-white border border-indigo-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-slate-800">
+                                                    <!-- Populated from global meds list -->
+                                                </select>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Clinical Dosage</label>
+                                                <input type="text" id="prescribe-dose" placeholder="e.g. 500mg" class="w-full px-5 py-3.5 bg-white border border-indigo-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-slate-800">
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Administration Route</label>
+                                                <select id="prescribe-route" class="w-full px-5 py-3.5 bg-white border border-indigo-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-slate-800">
+                                                    <option>Oral (PO)</option>
+                                                    <option>Intravenous (IV)</option>
+                                                    <option>Subcutaneous (SC)</option>
+                                                    <option>Intramuscular (IM)</option>
+                                                </select>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Frequency</label>
+                                                <select id="prescribe-frequency" class="w-full px-5 py-3.5 bg-white border border-indigo-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-slate-800">
+                                                    <option>OD</option>
+                                                    <option>BD</option>
+                                                    <option>TDS</option>
+                                                    <option>QID</option>
+                                                    <option>PRN</option>
+                                                    <option>STAT</option>
+                                                </select>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">First Dose Due</label>
+                                                <input type="datetime-local" id="prescribe-time-due" class="w-full px-5 py-3.5 bg-white border border-indigo-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 transition-all font-bold text-slate-800">
+                                            </div>
+                                            <div class="flex items-end">
+                                                <button type="button" onclick="handleNewPrescription()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
+                                                    Authorize Prescription
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-center">
+                                        <button type="button" onclick="togglePrescriptionView()" class="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+                                            Back to Dispensing Console
+                                        </button>
+                                    </div>
+                                </div>
 
                             <form id="cabinet1-form" class="space-y-8">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1095,6 +1166,16 @@
             const isNurse = userRole === 'Nurse';
             const isPharmacist = userRole === 'Pharmacist';
 
+            // Show New Prescription button only for Medical Doctors
+            const prescribeBtn = document.getElementById('btn-new-prescription');
+            if (prescribeBtn) {
+                if (isMedicalDoctor || isAdmin) {
+                    prescribeBtn.classList.remove('hidden');
+                } else {
+                    prescribeBtn.classList.add('hidden');
+                }
+            }
+
             // Hide/Show navigation items based on role
             const navButtons = document.querySelectorAll('nav button, .md\\:hidden button');
             navButtons.forEach(btn => {
@@ -1405,6 +1486,27 @@
             document.getElementById('order-route').value = med.route;
             document.getElementById('order-frequency').value = med.frequency;
             
+            // Auto-fill Authorizing Clinician if exists
+            if (med.prescribingDoctor) {
+                const doctorSelect = document.getElementById('order-doctor');
+                // Check if doctor exists in dropdown, if not add it
+                let exists = false;
+                for (let i = 0; i < doctorSelect.options.length; i++) {
+                    if (doctorSelect.options[i].text === med.prescribingDoctor) {
+                        doctorSelect.selectedIndex = i;
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.text = med.prescribingDoctor;
+                    opt.value = med.prescribingDoctor;
+                    doctorSelect.add(opt);
+                    doctorSelect.value = med.prescribingDoctor;
+                }
+            }
+
             // Check for dilution guidelines
             checkDilutionGuidelines(med.name);
 

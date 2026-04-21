@@ -136,6 +136,10 @@ function openPatientBCMAModal(bedNumber) {
                                     <div>
                                         <p class="text-xl font-black text-slate-900">${med.name}</p>
                                         <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-1">${med.dose} • ${med.route} • ${med.frequency}</p>
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered By:</p>
+                                            <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
+                                        </div>
                                     </div>
                                     <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
                                         isGiven ? 'bg-green-100 text-green-700' : 
@@ -515,6 +519,10 @@ function renderCabinet2() {
                                                                 ${protocol?.isHighAlert ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[7px] font-black">HIGH ALERT</span>' : ''}
                                                                 ${protocol?.isLASA ? '<span class="px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded text-[7px] font-black">LASA</span>' : ''}
                                                             </div>
+                                                            <div class="mt-2 pt-2 border-t border-slate-50">
+                                                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Prescribing Doctor</p>
+                                                                <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -562,6 +570,10 @@ function renderCabinet2() {
                                             <div>
                                                 <h4 class="text-lg font-black text-slate-900 tracking-tight leading-none">${med.name}</h4>
                                                 <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest mt-2 bg-blue-50 px-2 py-1 rounded-lg inline-block">${med.dose} • ${med.route}</p>
+                                                <div class="mt-2 text-[9px] font-bold text-slate-400">
+                                                    <p class="uppercase tracking-tighter">Ordered By:</p>
+                                                    <p class="text-blue-800 font-black">${med.prescribingDoctor || patient.info.doctor}</p>
+                                                </div>
                                             </div>
                                             <div class="text-right">
                                                 <span class="text-[9px] font-black text-slate-400 uppercase block">${formatDateTime(med.timeDue)}</span>
@@ -724,62 +736,80 @@ window.registerNewPatient = function(bedNumber) {
     const patient = db.patients.find(p => p.bedNumber === bedNumber);
     if (!patient) return;
 
-    // Clinical simulation data generation
-    const firstNames = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'];
-    const lastNames = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'];
-    const doctors = db.doctors;
-    const diagnoses = [
-        'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
-        'Congestive Cardiac Failure (CCF) - NYHA Class III',
-        'Community Acquired Pneumonia (CAP) - CURB-65 Score 2',
-        'Chronic Kidney Disease (CKD) Stage 4',
-        'Essential Hypertension with Hypertensive Urgency',
-        'Post-Appendectomy with Surgical Site Infection (SSI)',
-        'Acute Exacerbation of Bronchial Asthma (AEBA)',
-        'Dengue Fever with Warning Signs',
-        'Acute Coronary Syndrome (ACS) - NSTEMI'
+    // Clinical Scenarios Database for Realistic Demo
+    const scenarios = [
+        {
+            diagnosis: 'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
+            meds: [
+                { name: 'Metformin 500mg Tablet', dose: '500mg', route: 'Oral (PO)', freq: 'BD' },
+                { name: 'Insulin Actrapid (Soluble) SC', dose: '12 units', route: 'Subcutaneous (SC)', freq: 'TDS (Pre-meal)' },
+                { name: 'Ceftriaxone 1g Injection', dose: '1g', route: 'Intravenous (IV)', freq: 'OD' },
+                { name: 'Aspirin 75mg Tablet', dose: '75mg', route: 'Oral (PO)', freq: 'OD' }
+            ],
+            clinicalNote: 'Patient admitted for DFU management. Wound debridement planned. Monitoring CBG levels pre-meals.'
+        },
+        {
+            diagnosis: 'Acute Coronary Syndrome (ACS) - NSTEMI',
+            meds: [
+                { name: 'Clopidogrel 75mg Tablet', dose: '75mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Bisoprolol 5mg Tablet', dose: '5mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Enoxaparin 40mg/0.4ml Pre-filled Syringe', dose: '40mg', route: 'Subcutaneous (SC)', freq: 'BD' },
+                { name: 'Pantoprazole 40mg Injection', dose: '40mg', route: 'Intravenous (IV)', freq: 'OD' }
+            ],
+            clinicalNote: 'NSTEMI protocol initiated. Stable vitals. Monitoring for chest pain and bleeding tendencies.'
+        },
+        {
+            diagnosis: 'Community Acquired Pneumonia (CAP) - CURB-65 Score 2',
+            meds: [
+                { name: 'Piperacillin/Tazobactam 4.5g Injection', dose: '4.5g', route: 'Intravenous (IV)', freq: 'TDS' },
+                { name: 'Paracetamol 500mg Tablet', dose: '1g', route: 'Oral (PO)', freq: 'PRN (Fever)' },
+                { name: 'Furosemide 20mg/2ml Injection', dose: '20mg', route: 'Intravenous (IV)', freq: 'BD' },
+                { name: 'Amoxicillin 500mg Capsule', dose: '500mg', route: 'Oral (PO)', freq: 'TDS' }
+            ],
+            clinicalNote: 'Productive cough and fever. Oxygen support 2L/min via NP. Antibiotic therapy day 2.'
+        },
+        {
+            diagnosis: 'Post-Appendectomy with Surgical Site Infection (SSI)',
+            meds: [
+                { name: 'Morphine 10mg/ml Injection (Controlled Drug)', dose: '2.5mg', route: 'Intravenous (IV)', freq: 'PRN (Pain)' },
+                { name: 'Metronidazole 500mg/100ml IV Infusion', dose: '500mg', route: 'Intravenous (IV)', freq: 'TDS' },
+                { name: 'Pantoprazole 40mg Injection', dose: '40mg', route: 'Intravenous (IV)', freq: 'OD' },
+                { name: 'Ondansetron 4mg/2ml Injection', dose: '4mg', route: 'Intravenous (IV)', freq: 'PRN (Nausea)' }
+            ],
+            clinicalNote: 'Post-op day 3. Wound discharge noted. Culture and sensitivity sent. Pain managed via PCA/IV PRN.'
+        }
     ];
 
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const doctor = doctors[Math.floor(Math.random() * doctors.length)];
-    const diagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
-
-    // Randomized Prescribed Medications
-    const allMedNames = [
-        ...db.medications.oral,
-        ...db.medications.iv,
-        ...db.medications.injection,
-        ...db.medications.emergency,
-        ...db.medications.others
-    ];
+    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const firstName = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'][Math.floor(Math.random() * 10)];
+    const lastName = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'][Math.floor(Math.random() * 10)];
     
-    // Polypharmacy: Generate 4-7 medications
-    const medCount = Math.floor(Math.random() * 4) + 4; 
-    const patientMeds = [];
-    const shuffledMeds = [...allMedNames].sort(() => 0.5 - Math.random());
-    
-    for(let m=0; m < medCount; m++) {
-        const medName = shuffledMeds[m];
-        let route = 'Oral (PO)';
-        if (db.medications.iv.includes(medName)) route = 'Intravenous (IV)';
-        if (db.medications.injection.includes(medName)) route = 'Subcutaneous (SC)';
-        if (db.medications.emergency.includes(medName)) route = 'Intravenous (IV)';
+    // Demo Optimization: Dynamic Time Scheduling
+    // Prevent excessive missed doses by setting "Time Due" to current time + small offsets
+    const now = new Date();
+    const patientMeds = scenario.meds.map((med, index) => {
+        const timeDue = new Date(now.getTime());
+        // Stagger due times: -15 min (slightly overdue), +30 min (due soon), +2h, +4h
+        const offsets = [-15, 30, 120, 240]; 
+        timeDue.setMinutes(timeDue.getMinutes() + offsets[index % offsets.length]);
+        
+        const doctor = db.doctors[Math.floor(Math.random() * db.doctors.length)];
 
-        patientMeds.push({
-            id: `MED-${Date.now()}-${bedNumber}-${m}`,
-            name: medName,
-            dose: medName.includes('mg') ? medName.split(' ').filter(word => word.includes('mg'))[0] || '1 unit' : '1 unit',
-            route: route,
-            frequency: ['Stat', 'OD', 'BD', 'TDS', 'QID', 'PRN'][Math.floor(Math.random() * 6)],
-            timeDue: new Date(Date.now() + (Math.random() * 24 * 60 * 60 * 1000)).toISOString(),
+        return {
+            id: `MED-${Date.now()}-${bedNumber}-${index}`,
+            name: med.name,
+            dose: med.dose,
+            route: med.route,
+            frequency: med.freq,
+            timeDue: timeDue.toISOString(),
             status: 'Pending',
+            prescribingDoctor: doctor, // KKM MAR Requirement
             nurseId: 'Admitting Nurse',
-            doctor: doctor,
+            nurseInCharge: currentUser.fullname, // Current session nurse
             timeDispensed: null,
             timeAdministered: null
-        });
-    }
+        };
+    });
 
     // Populate patient info
     patient.occupied = true;
@@ -787,10 +817,10 @@ window.registerNewPatient = function(bedNumber) {
         name: `${firstName} ${lastName}`,
         mrn: rn.toUpperCase(),
         bedNumber: bedNumber,
-        doctor: doctor,
-        nurseInCharge: currentUser.id.replace(/_/g, ' '),
-        diagnosis: diagnosis,
-        clinicalProgress: 'New admission. Baseline assessments completed. Clinical stability established. Monitoring vitals and pharmacological response.',
+        doctor: db.doctors[Math.floor(Math.random() * db.doctors.length)],
+        nurseInCharge: currentUser.fullname, // KKM MAR Requirement
+        diagnosis: scenario.diagnosis,
+        clinicalProgress: scenario.clinicalNote,
         diagnosticResults: {
             woundImage: 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&q=80&w=400',
             xrayImage: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?auto=format&fit=crop&q=80&w=400',
@@ -810,8 +840,8 @@ window.registerNewPatient = function(bedNumber) {
     patient.medications = patientMeds;
 
     updateDB(db);
-    generateLog('PATIENT_REGISTRATION', currentUser.id, `Registered new patient ${patient.info.name} (MRN: ${patient.info.mrn}) with ${medCount} available medications to Bed ${bedNumber}`);
-    showNotification(`Patient registered successfully with ${medCount} available medications.`, 'success');
+    generateLog('PATIENT_REGISTRATION', currentUser.id, `Registered ${patient.info.name} (${patient.info.mrn}) for ${scenario.diagnosis}. Prescribed by ${patient.info.doctor}.`);
+    showNotification(`Registered for ${scenario.diagnosis}.`, 'success');
     renderCabinet2();
 };
 

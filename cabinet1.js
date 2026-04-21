@@ -92,3 +92,114 @@ function reportMedicationIssue(invId, issue) {
         showNotification(`${item.name} marked as UNUSABLE.`, 'info');
     }
 }
+
+/**
+ * NEW: Prescription Module Logic (For Medical Doctors)
+ */
+function togglePrescriptionView() {
+    const dispensingForm = document.getElementById('cabinet1-form');
+    const prescriptionView = document.getElementById('prescription-view');
+    const btnNew = document.getElementById('btn-new-prescription');
+    const clinicalInstruction = dispensingForm.previousElementSibling;
+
+    if (prescriptionView.classList.contains('hidden')) {
+        // Switch to Prescription View
+        dispensingForm.classList.add('hidden');
+        clinicalInstruction.classList.add('hidden');
+        prescriptionView.classList.remove('hidden');
+        btnNew.innerHTML = 'Cancel Prescription';
+        btnNew.classList.replace('bg-indigo-600', 'bg-slate-500');
+        
+        // Auto-populate Doctor Stamp
+        const stampContainer = document.getElementById('doctor-stamp-container');
+        if (stampContainer) {
+            stampContainer.innerHTML = generateNurseStamp(currentUser.fullname, currentUser.role);
+        }
+        
+        // Populate Medication List from global DB
+        populatePrescriptionMeds();
+        
+        // Default time to now + 30 mins
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30);
+        document.getElementById('prescribe-time-due').value = now.toISOString().slice(0, 16);
+    } else {
+        // Switch back to Dispensing View
+        prescriptionView.classList.add('hidden');
+        dispensingForm.classList.remove('hidden');
+        clinicalInstruction.classList.remove('hidden');
+        btnNew.innerHTML = '+ New Prescription';
+        btnNew.classList.replace('bg-slate-500', 'bg-indigo-600');
+    }
+}
+
+function populatePrescriptionMeds() {
+    const db = getDB();
+    const select = document.getElementById('prescribe-med-name');
+    if (!select) return;
+    
+    const allMeds = [
+        ...db.medications.oral,
+        ...db.medications.iv,
+        ...db.medications.injection,
+        ...db.medications.emergency,
+        ...db.medications.others
+    ];
+    
+    select.innerHTML = allMeds.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+function handleNewPrescription() {
+    const db = getDB();
+    const bedNumber = parseInt(document.getElementById('cabinet1-patient-list').value);
+    
+    if (!bedNumber) {
+        showNotification('Clinical Error: No patient selected for prescription.', 'error');
+        return;
+    }
+
+    const patient = db.patients.find(p => p.bedNumber === bedNumber);
+    if (!patient || !patient.occupied) {
+        showNotification('Clinical Error: Selected bed is currently unoccupied.', 'error');
+        return;
+    }
+
+    const medName = document.getElementById('prescribe-med-name').value;
+    const dose = document.getElementById('prescribe-dose').value;
+    const route = document.getElementById('prescribe-route').value;
+    const freq = document.getElementById('prescribe-frequency').value;
+    const timeDue = document.getElementById('prescribe-time-due').value;
+
+    if (!dose || !timeDue) {
+        showNotification('Validation Error: Dose and Due Time are required.', 'warning');
+        return;
+    }
+
+    // Create New Medication Order (KKM Standard Traceability)
+    const newMed = {
+        id: `MED-${Date.now()}-${bedNumber}`,
+        name: medName,
+        dose: dose,
+        route: route,
+        frequency: freq,
+        timeDue: new Date(timeDue).toISOString(),
+        status: 'Pending',
+        prescribingDoctor: currentUser.fullname, // Auto-stamped
+        nurseId: 'Awaiting Dispensing',
+        nurseInCharge: patient.info.nurseInCharge,
+        timeDispensed: null,
+        timeAdministered: null
+    };
+
+    patient.medications.push(newMed);
+    updateDB(db);
+
+    // Clinical Log with Doctor Stamp Traceability
+    generateLog('NEW_PRESCRIPTION', currentUser.id, `AUTHORIZED ORDER: ${medName} ${dose} ${route} ${freq}. Prescribed by ${currentUser.fullname} (${currentUser.role}).`);
+    
+    showNotification(`New prescription authorized for Bed ${bedNumber}: ${medName}`, 'success');
+    
+    // Switch back to dispensing view to see the new order
+    togglePrescriptionView();
+    selectPatientForCabinet1(bedNumber); // Refresh available meds list
+}
