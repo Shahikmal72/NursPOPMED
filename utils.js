@@ -26,8 +26,8 @@ function generateLog(action, nurseId, details) {
 
 function getMedicationStatus(med) {
     if (med.status === 'Administered' || med.status === 'Given') return 'Green';
-    if (med.status === 'Dispensed') return 'Yellow';
     if (med.status === 'Missed') return 'Red';
+    if (med.status === 'Dispensed') return 'Yellow';
     
     // Check for missed dose based on due time
     const now = new Date();

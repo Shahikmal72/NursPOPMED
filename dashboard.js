@@ -32,9 +32,9 @@ function updateDashboardStats() {
     
     patients.forEach(p => {
         p.medications.forEach(m => {
-            if (m.status === 'Pending' || m.status === 'Dispensed') {
+            if (m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Missed') {
                 const dueTime = new Date(m.timeDue);
-                if (now > dueTime) {
+                if (m.status === 'Missed' || now > dueTime) {
                     totalMissed++;
                 } else {
                     totalPending++;
@@ -95,12 +95,12 @@ function openPatientBCMAModal(bedNumber) {
     modal.id = 'bcma-workflow-modal';
     modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[400] flex items-center justify-center p-4';
     
-    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Given' || m.status === 'Administered');
+    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Given' || m.status === 'Administered' || m.status === 'Missed');
     
     modal.innerHTML = `
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20 max-h-[90vh] flex flex-col">
             <!-- Header -->
-            <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-8 text-white relative">
+            <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-8 text-white relative shrink-0">
                 <div class="flex justify-between items-center">
                     <div>
                         <div class="flex items-center gap-3 mb-2">
@@ -118,7 +118,7 @@ function openPatientBCMAModal(bedNumber) {
                 </div>
             </div>
 
-            <div class="p-8">
+            <div class="p-8 overflow-y-auto">
                 <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Medications Due for Administration</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,6 +128,10 @@ function openPatientBCMAModal(bedNumber) {
                         </div>
                     ` : medicationsDue.map(med => {
                         const isGiven = med.status === 'Given' || med.status === 'Administered';
+                        const isMissed = med.status === 'Missed';
+                        const now = new Date();
+                        const dueTime = new Date(med.timeDue);
+                        const isOverdue = !isGiven && !isMissed && now > dueTime;
                         const statusColor = getMedicationStatus(med);
                         
                         return `
@@ -141,10 +145,13 @@ function openPatientBCMAModal(bedNumber) {
                                             <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
                                         </div>
                                     </div>
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                        isGiven ? 'bg-green-100 text-green-700' : 
-                                        statusColor === 'Red' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                                    }">${isGiven ? 'GIVEN' : med.status}</span>
+                                    <div class="flex flex-col items-end gap-2">
+                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                            isGiven ? 'bg-green-100 text-green-700' : 
+                                            isMissed || isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                        }">${isGiven ? 'GIVEN' : isMissed ? 'MISSED' : isOverdue ? 'OVERDUE' : med.status}</span>
+                                        ${isMissed ? `<span class="text-[8px] font-black text-red-600 uppercase tracking-tighter">${med.justification || ''}</span>` : ''}
+                                    </div>
                                 </div>
                                 
                                 <div class="pt-4 border-t border-slate-100">
@@ -153,19 +160,39 @@ function openPatientBCMAModal(bedNumber) {
                                             <p class="uppercase tracking-tighter">Scheduled Time</p>
                                             <p class="text-slate-600">${formatDateTime(med.timeDue)}</p>
                                         </div>
-                                        ${isGiven 
-                                            ? `<div class="flex flex-col items-end">
-                                                 <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 mb-2">
-                                                     📘 HE Pamphlet
-                                                 </button>
-                                                 ${generateNurseStamp(med.nurseName || currentUser.fullname, med.nurseRole || currentUser.role)}
-                                               </div>`
-                                            : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Administered</button>`
-                                        }
+                                        <div class="flex gap-2">
+                                            ${isGiven 
+                                                ? `<div class="flex flex-col items-end">
+                                                     <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 mb-2">
+                                                         📘 HE Pamphlet
+                                                     </button>
+                                                     ${generateNurseStamp(med.nurseName || currentUser.fullname, med.nurseRole || currentUser.role)}
+                                                   </div>`
+                                                : isMissed 
+                                                ? `<div class="flex flex-col items-end">
+                                                     <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Missed Dose Documented</p>
+                                                     ${generateNurseStamp(med.nurseName || currentUser.fullname, med.nurseRole || currentUser.role)}
+                                                   </div>`
+                                                : `
+                                                    ${isOverdue ? `
+                                                        <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="bg-red-500 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-600 transition-all">Document Missed</button>
+                                                    ` : ''}
+                                                    <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Administered</button>
+                                                  `
+                                            }
+                                        </div>
                                     </div>
                                     ${isGiven ? `
                                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[9px] font-bold text-slate-500">
                                             <span class="uppercase tracking-widest text-[8px] opacity-60">Legal Record:</span> Administered at ${formatDateTime(med.timeAdministered)}
+                                        </div>
+                                    ` : isMissed ? `
+                                        <div class="bg-red-50 p-3 rounded-xl border border-red-100 text-[9px] font-bold text-red-500">
+                                            <div class="flex flex-col gap-1">
+                                                <div><span class="uppercase tracking-widest text-[8px] opacity-60">Justification:</span> ${med.justification}</div>
+                                                ${med.remarks ? `<div><span class="uppercase tracking-widest text-[8px] opacity-60">Remarks:</span> ${med.remarks}</div>` : ''}
+                                                <div class="text-[8px] opacity-40 mt-1 italic">Recorded at ${formatDateTime(med.timeAdministered)}</div>
+                                            </div>
                                         </div>
                                     ` : ''}
                                 </div>
@@ -226,6 +253,106 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
 
     // Standard Administration
     processAdministration(db, medication, bedNumber);
+};
+
+window.handleShowMissedJustification = function(bedNumber, medId) {
+    const db = getDB();
+    const patient = db.patients.find(p => p.bedNumber === bedNumber);
+    const medication = patient.medications.find(m => m.id === medId);
+
+    const modal = document.createElement('div');
+    modal.id = 'missed-justification-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[500] flex items-center justify-center p-4';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-pop-in border border-slate-200">
+            <div class="bg-red-600 p-6 text-white text-center">
+                <h2 class="text-xl font-black uppercase tracking-tighter">Missed Dose Justification</h2>
+                <p class="text-red-100 text-[10px] font-bold uppercase tracking-widest mt-1">Legal Documentation Required</p>
+            </div>
+            
+            <div class="p-8 space-y-6">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Medication</p>
+                    <p class="text-lg font-black text-slate-900">${medication.name}</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Reason (MAR Standards):</p>
+                    
+                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Patient refused medication')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
+                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Patient refused medication</p>
+                    </button>
+                    
+                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Patient in Operating Theatre (OT)')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
+                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Patient in Operating Theatre (OT)</p>
+                    </button>
+                    
+                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Doctor ordered to omit')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
+                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Doctor ordered to omit</p>
+                    </button>
+
+                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Given But Late')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
+                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Given But Late</p>
+                    </button>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Additional Remarks (Optional):</p>
+                    <textarea id="missed-remarks-input" placeholder="Enter clinical remarks here..." class="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 h-24 resize-none"></textarea>
+                </div>
+                
+                <button onclick="document.getElementById('missed-justification-modal').remove()" class="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+window.handleMissedSubmission = function(bedNumber, medId, reason) {
+    const remarks = document.getElementById('missed-remarks-input').value;
+    submitMissedJustification(bedNumber, medId, reason, remarks);
+};
+
+window.submitMissedJustification = function(bedNumber, medId, reason, remarks = '') {
+    const db = getDB();
+    const patient = db.patients.find(p => p.bedNumber === bedNumber);
+    const medication = patient.medications.find(m => m.id === medId);
+    const now = new Date().toISOString();
+
+    // Update Medication Record
+    medication.status = 'Missed';
+    medication.justification = reason;
+    medication.remarks = remarks; // Store remarks
+    medication.timeAdministered = now; // Store recording time
+    medication.nurseId = currentUser.id;
+    medication.nurseName = currentUser.fullname;
+    medication.nurseRole = currentUser.role;
+
+    updateDB(db);
+
+    // Legal Audit Log
+    const legalRecord = {
+        patientName: patient.info.name,
+        mrn: patient.info.mrn,
+        medication: medication.name,
+        scheduledTime: medication.timeDue,
+        recordedTime: now,
+        recordedBy: currentUser.fullname,
+        status: "Missed",
+        justification: reason,
+        remarks: remarks
+    };
+    generateLog('LEGAL_MISSED_DOSE', currentUser.id, JSON.stringify(legalRecord));
+
+    showNotification(`Missed dose documented: ${reason}${remarks ? ' - ' + remarks : ''}`, 'success');
+    
+    // UI Cleanup
+    const modal = document.getElementById('missed-justification-modal');
+    if (modal) modal.remove();
+    openPatientBCMAModal(bedNumber);
+    updateDashboard();
 };
 
 function processAdministration(db, medication, bedNumber) {
@@ -500,13 +627,14 @@ function renderCabinet2() {
                                 <tbody class="divide-y divide-slate-100 bg-white/30">
                                     ${medications.map(med => {
                                         const isGiven = med.status === 'Given' || med.status === 'Administered';
+                                        const isMissed = med.status === 'Missed';
                                         const protocol = db.medicationProtocols[med.name];
                                         
                                         return `
-                                            <tr class="group transition-all duration-300 ${isGiven ? 'opacity-60' : 'hover:bg-blue-50/50'}">
+                                            <tr class="group transition-all duration-300 ${isGiven || isMissed ? 'opacity-60' : 'hover:bg-blue-50/50'}">
                                                 <td class="px-8 py-6">
                                                     <div class="flex items-center gap-3">
-                                                        <div class="w-2 h-2 rounded-full ${isGiven ? 'bg-green-500' : 'bg-amber-400 animate-pulse'}"></div>
+                                                        <div class="w-2 h-2 rounded-full ${isGiven ? 'bg-green-500' : isMissed ? 'bg-red-500' : 'bg-amber-400 animate-pulse'}"></div>
                                                         <div>
                                                             <div class="flex items-center gap-2">
                                                                 <p class="text-sm font-black text-slate-900 tracking-tight cursor-help hover:text-blue-700 transition-colors" onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')">${med.name}</p>
@@ -519,10 +647,17 @@ function renderCabinet2() {
                                                                 ${protocol?.isHighAlert ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[7px] font-black">HIGH ALERT</span>' : ''}
                                                                 ${protocol?.isLASA ? '<span class="px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded text-[7px] font-black">LASA</span>' : ''}
                                                             </div>
-                                                            <div class="mt-2 pt-2 border-t border-slate-50">
-                                                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Prescribing Doctor</p>
-                                                                <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
-                                                            </div>
+                                                            ${isMissed ? `
+                                                                <div class="mt-2 p-2 bg-red-50 rounded-lg border border-red-100">
+                                                                    <p class="text-[8px] font-black text-red-600 uppercase tracking-tighter">Missed: ${med.justification}</p>
+                                                                    ${med.remarks ? `<p class="text-[8px] font-bold text-red-400 mt-1 italic">${med.remarks}</p>` : ''}
+                                                                </div>
+                                                            ` : `
+                                                                <div class="mt-2 pt-2 border-t border-slate-50">
+                                                                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Prescribing Doctor</p>
+                                                                    <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
+                                                                </div>
+                                                            `}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -550,6 +685,14 @@ function renderCabinet2() {
                                                                 <p class="text-[8px] font-bold text-slate-400">${new Date(med.timeAdministered).toLocaleTimeString()}</p>
                                                             </div>
                                                           </div>`
+                                                        : isMissed 
+                                                        ? `<div class="flex flex-col items-end gap-2">
+                                                            <span class="px-3 py-1 bg-red-50 text-red-700 rounded-full text-[9px] font-black border border-red-100 uppercase tracking-widest">Missed</span>
+                                                            <div class="text-right">
+                                                                <p class="text-[9px] font-black text-slate-900">${med.nurseName || 'Authorized Nurse'}</p>
+                                                                <p class="text-[8px] font-bold text-slate-400">${new Date(med.timeAdministered).toLocaleTimeString()}</p>
+                                                            </div>
+                                                          </div>`
                                                         : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-blue-900/10 active:scale-95 transition-all">Verify & Administer</button>`
                                                     }
                                                 </td>
@@ -564,6 +707,7 @@ function renderCabinet2() {
                         <div class="mobile-only p-5 space-y-4">
                             ${medications.map(med => {
                                 const isGiven = med.status === 'Given' || med.status === 'Administered';
+                                const isMissed = med.status === 'Missed';
                                 return `
                                     <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
                                         <div class="flex justify-between items-start mb-4">
@@ -587,6 +731,14 @@ function renderCabinet2() {
                                                     <span class="text-[10px] font-black text-green-700 uppercase tracking-widest">Administered</span>
                                                 </div>
                                                 <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] border-b border-indigo-200 pb-0.5">📘 HE Pamphlet</button>
+                                               </div>`
+                                            : isMissed 
+                                            ? `<div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                                                    <span class="text-[10px] font-black text-red-700 uppercase tracking-widest">Missed: ${med.justification}</span>
+                                                </div>
+                                                ${med.remarks ? `<p class="text-[9px] font-bold text-red-400 italic">${med.remarks}</p>` : ''}
                                                </div>`
                                             : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="w-full py-5 bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 active:scale-95 transition-all">✔ Administer Now</button>`
                                         }

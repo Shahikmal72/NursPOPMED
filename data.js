@@ -566,20 +566,23 @@ function initializeDB() {
         existingDB.ivSolutions = initialData.ivSolutions;
         existingDB.doctors = initialData.doctors;
         
-        // Refresh doctors for existing patients to ensure they align with the new list
+        // Date Synchronization Logic: Update all patient medication dates to current date
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
         if (existingDB.patients && Array.isArray(existingDB.patients)) {
             existingDB.patients.forEach(patient => {
-                if (patient.info && patient.info.doctor) {
-                    // If the current doctor is not in the new list, assign a random one from the new list
-                    if (!initialData.doctors.includes(patient.info.doctor)) {
-                        patient.info.doctor = initialData.doctors[Math.floor(Math.random() * initialData.doctors.length)];
-                    }
-                }
                 if (patient.medications && Array.isArray(patient.medications)) {
                     patient.medications.forEach(med => {
-                        if (med.doctor && !initialData.doctors.includes(med.doctor)) {
-                            med.doctor = patient.info.doctor;
-                        }
+                        const oldDue = new Date(med.timeDue);
+                        // Preserve the time (hours, minutes) but update to current date
+                        const newDue = new Date(startOfToday.getTime());
+                        newDue.setHours(oldDue.getHours(), oldDue.getMinutes(), oldDue.getSeconds());
+                        
+                        // If the updated date is still in the past (more than 24h ago), 
+                        // it means it was a multi-day simulation. For simplicity, 
+                        // we just ensure they are all on the CURRENT date.
+                        med.timeDue = newDue.toISOString();
                     });
                 }
             });
@@ -685,6 +688,11 @@ function initializeDB() {
         ];
 
         // Initialize patients (Beds 1-25) with polypharmacy and BCMA readiness
+        let totalMedsCreated = 0;
+        let pendingCount = 0;
+        let missedCount = 0;
+        const now = new Date();
+
         for (let i = 1; i <= 25; i++) {
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -707,6 +715,32 @@ function initializeDB() {
                 if (initialData.medications.injection.includes(medName)) route = 'Subcutaneous (SC)';
                 if (initialData.medications.emergency.includes(medName)) route = 'Intravenous (IV)';
 
+                // Mathematical Logic for Realistic Stats:
+                // We need at least 30 Pending and 5 Missed.
+                // Total beds = 25. Meds per bed = 4-7. Total meds ~ 125-175.
+                let status = 'Pending';
+                let timeDue;
+                
+                if (missedCount < 10) { // Aim for slightly more than 5 to ensure "minimum"
+                    status = 'Pending'; // Status remains Pending, but timeDue is in past
+                    // Set timeDue to 1-4 hours ago
+                    timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 240) + 60) * 60000);
+                    missedCount++;
+                } else if (pendingCount < 40) { // Aim for slightly more than 30
+                    status = 'Pending';
+                    // Set timeDue to 1-8 hours from now
+                    timeDue = new Date(now.getTime() + (Math.floor(Math.random() * 480) + 30) * 60000);
+                    pendingCount++;
+                } else {
+                    // Random distribution for the rest
+                    const isPast = Math.random() < 0.2;
+                    if (isPast) {
+                        timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 120) + 10) * 60000);
+                    } else {
+                        timeDue = new Date(now.getTime() + (Math.floor(Math.random() * 600) + 10) * 60000);
+                    }
+                }
+
                 patientMeds.push({
                     id: `MED-${Date.now()}-${i}-${m}`,
                     name: medName,
@@ -714,13 +748,14 @@ function initializeDB() {
                     dose: medName.includes('mg') ? medName.split(' ').filter(word => word.includes('mg'))[0] || '1 unit' : '1 unit',
                     route: route,
                     frequency: 'BD',
-                    timeDue: new Date(Date.now() + (Math.random() * 24 * 60 * 60 * 1000)).toISOString(),
-                    status: 'Pending',
+                    timeDue: timeDue.toISOString(),
+                    status: status,
                     nurseId: 'System',
                     doctor: doctor,
                     timeDispensed: null,
                     timeAdministered: null
                 });
+                totalMedsCreated++;
             }
 
             initialData.patients.push({
