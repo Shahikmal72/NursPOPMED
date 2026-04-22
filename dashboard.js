@@ -1,6 +1,113 @@
 // Dashboard and Main UI Logic
 let currentBCMAPatient = null;
 
+function formatPrescriberName(name) {
+    if (!name) return 'Not documented';
+    return name.startsWith('Dr.') ? name : `Dr. ${name}`;
+}
+
+function getLotDaysRemaining(expiry) {
+    const expiryDate = new Date(expiry);
+    const today = new Date();
+    expiryDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+}
+
+function getLotLifecycle(expiry) {
+    const daysRemaining = getLotDaysRemaining(expiry);
+
+    if (daysRemaining < 0) {
+        return {
+            label: 'Expired',
+            chipClass: 'bg-red-100 text-red-700 border-red-200',
+            textClass: 'text-red-700',
+            subtitle: `${Math.abs(daysRemaining)} day(s) overdue`
+        };
+    }
+
+    if (daysRemaining <= 30) {
+        return {
+            label: 'Near Expiry',
+            chipClass: 'bg-amber-100 text-amber-700 border-amber-200',
+            textClass: 'text-amber-700',
+            subtitle: `${daysRemaining} day(s) remaining`
+        };
+    }
+
+    return {
+        label: 'Active',
+        chipClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        textClass: 'text-emerald-700',
+        subtitle: `${daysRemaining} day(s) remaining`
+    };
+}
+
+function renderSevenRightsBoard(patient, med) {
+    const dueTime = new Date(med.timeDue);
+    const now = new Date();
+    const timeOk = Math.abs(now - dueTime) <= 60 * 60 * 1000 || med.status === 'Given' || med.status === 'Administered';
+    const documentationDone = med.status === 'Administered' || med.status === 'Given';
+    const rights = [
+        { label: 'Right Patient', value: `${patient.info.name} (${patient.info.mrn})`, ok: true },
+        { label: 'Right Drug', value: med.name, ok: !!med.name },
+        { label: 'Right Dose', value: med.dose || 'Not set', ok: !!med.dose },
+        { label: 'Right Route', value: med.route || 'Not set', ok: !!med.route },
+        { label: 'Right Time', value: formatDateTime(med.timeDue), ok: timeOk },
+        { label: 'Right Reason', value: patient.info.diagnosis || 'Clinical indication pending', ok: !!patient.info.diagnosis },
+        { label: 'Right Documentation', value: documentationDone ? 'Recorded in eMAR' : 'Pending administration record', ok: documentationDone }
+    ];
+
+    return `
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">7 Rights Verification</p>
+                    <p class="text-xs font-bold text-slate-600 mt-1">Live administration safety check before medication is given.</p>
+                </div>
+                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+                    <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">Prescribed By</p>
+                    <p class="text-sm font-black text-blue-900 mt-1">${formatPrescriberName(med.prescribingDoctor || patient.info.doctor)}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                ${rights.map(right => `
+                    <div class="rounded-2xl border ${right.ok ? 'border-emerald-100 bg-emerald-50' : 'border-amber-100 bg-amber-50'} p-3">
+                        <p class="text-[8px] font-black uppercase tracking-widest ${right.ok ? 'text-emerald-600' : 'text-amber-600'}">${right.label}</p>
+                        <p class="text-[11px] font-bold text-slate-700 mt-1.5 leading-snug">${right.value}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function renderSevenRightsSummary(patient, med) {
+    const dueTime = new Date(med.timeDue);
+    const now = new Date();
+    const timeOk = Math.abs(now - dueTime) <= 60 * 60 * 1000 || med.status === 'Given' || med.status === 'Administered';
+    const rights = [
+        { label: 'Patient', value: `Bed ${patient.bedNumber} / ${patient.info.mrn}`, ok: true },
+        { label: 'Drug', value: med.name, ok: !!med.name },
+        { label: 'Dose', value: med.dose || 'Not set', ok: !!med.dose },
+        { label: 'Route', value: med.route || 'Not set', ok: !!med.route },
+        { label: 'Time', value: formatDateTime(med.timeDue), ok: timeOk },
+        { label: 'Reason', value: patient.info.diagnosis || 'Clinical indication', ok: true },
+        { label: 'Documentation', value: med.status === 'Administered' || med.status === 'Given' ? 'Recorded' : 'Pending record', ok: med.status === 'Administered' || med.status === 'Given' }
+    ];
+
+    return `
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+            ${rights.map(right => `
+                <div class="rounded-xl border ${right.ok ? 'border-green-100 bg-green-50' : 'border-amber-100 bg-amber-50'} p-3">
+                    <p class="text-[8px] font-black uppercase tracking-widest ${right.ok ? 'text-green-600' : 'text-amber-600'}">${right.label}</p>
+                    <p class="text-[10px] font-bold text-slate-700 mt-1 leading-tight">${right.value}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 function updateDashboard() {
     const db = getDB();
     
@@ -186,7 +293,7 @@ function openPatientBCMAModal(bedNumber) {
                                         <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-1">${med.dose} • ${med.route} • ${med.frequency}</p>
                                         <div class="mt-2 flex items-center gap-2">
                                             <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered By:</p>
-                                            <p class="text-[10px] font-black text-blue-800">${(med.prescribingDoctor || patient.info.doctor).startsWith('Dr.') ? '' : 'Dr. '}${med.prescribingDoctor || patient.info.doctor}</p>
+                                            <p class="text-[10px] font-black text-blue-800">${formatPrescriberName(med.prescribingDoctor || patient.info.doctor)}</p>
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
@@ -199,6 +306,7 @@ function openPatientBCMAModal(bedNumber) {
                                 </div>
                                 
                                 <div class="pt-4 border-t border-slate-100">
+                                    ${renderSevenRightsSummary(patient, med)}
                                     <div class="flex items-center justify-between mb-4">
                                         <div class="text-[10px] font-bold text-slate-400">
                                             <p class="uppercase tracking-tighter">Scheduled Time</p>
@@ -775,10 +883,12 @@ function renderCabinet2() {
                         <thead class="sticky top-0 bg-white z-10 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                             <tr>
                                 <th class="px-8 py-4">Medication Agent</th>
+                                <th class="px-6 py-4">Prescriber</th>
                                 <th class="px-6 py-4">Route/Freq</th>
                                 <th class="px-6 py-4 text-center">Schedule</th>
+                                <th class="px-6 py-4">7 Rights Check</th>
                                 <th class="px-6 py-4">Remarks/Legal Record</th>
-                                <th class="px-8 py-4 text-right">Verification</th>
+                                <th class="px-8 py-4 text-right">Administration</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
@@ -806,12 +916,39 @@ function renderCabinet2() {
                                             </div>
                                         </td>
                                         <td class="px-6 py-6">
+                                            <div class="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                                                <p class="text-[8px] font-black text-blue-500 uppercase tracking-widest">Prescribed By</p>
+                                                <p class="text-[11px] font-black text-blue-900 mt-1 leading-snug">${formatPrescriberName(med.prescribingDoctor || patient.info.doctor)}</p>
+                                                <p class="text-[8px] font-bold text-blue-600 mt-2 uppercase tracking-widest">Source Order</p>
+                                                <p class="text-[9px] font-bold text-blue-800 mt-1">${isGiven ? 'Verified in administration record' : 'Pending bedside verification'}</p>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-6">
                                             <span class="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${med.route}</span>
                                             <p class="text-[9px] font-black text-slate-400 mt-1 uppercase">${med.frequency}</p>
                                         </td>
                                         <td class="px-6 py-6 text-center">
                                             <span class="text-[10px] font-black text-slate-700">${formatDateTime(med.timeDue)}</span>
                                             ${isOverdue ? '<p class="text-[8px] font-black text-red-600 uppercase tracking-widest mt-1">Overdue</p>' : ''}
+                                        </td>
+                                        <td class="px-6 py-6">
+                                            <div class="grid grid-cols-1 gap-2 min-w-[220px]">
+                                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                                                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Right Patient</p>
+                                                    <p class="text-[9px] font-bold text-slate-700 mt-1">Bed ${patient.bedNumber} · ${patient.info.mrn}</p>
+                                                </div>
+                                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                                                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Right Drug / Dose / Route</p>
+                                                    <p class="text-[9px] font-bold text-slate-700 mt-1">${med.name}</p>
+                                                    <p class="text-[9px] font-bold text-slate-700">${med.dose} · ${med.route}</p>
+                                                </div>
+                                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                                                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Right Time / Reason / Documentation</p>
+                                                    <p class="text-[9px] font-bold ${isOverdue ? 'text-red-600' : 'text-slate-700'} mt-1">${isOverdue ? 'Overdue review required' : 'Scheduled window active'}</p>
+                                                    <p class="text-[9px] font-bold text-slate-700">${patient.info.diagnosis}</p>
+                                                    <p class="text-[9px] font-bold ${isGiven ? 'text-emerald-700' : 'text-amber-700'}">${isGiven ? 'Documented in eMAR' : 'Awaiting documentation'}</p>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-6">
                                             ${isMissed ? `
@@ -853,6 +990,10 @@ function renderCabinet2() {
                             }).join('')}
                         </tbody>
                     </table>
+                </div>
+
+                <div class="border-t border-slate-100 bg-slate-50/70 p-4 md:p-6">
+                    ${renderSevenRightsBoard(patient, medications[0] || { name: 'No medication', dose: '', route: '', timeDue: new Date().toISOString(), status: 'Pending' })}
                 </div>
             </div>
         </div>
@@ -1257,31 +1398,64 @@ window.showInventoryLots = function(itemId) {
     const item = db.inventory.find(i => i.id === itemId);
     if (!item) return;
     refreshInventoryDerivedFields(item);
+    item.lots.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+    const expiredLots = item.lots.filter(lot => new Date(lot.expiry) < new Date());
+    const nearExpiryLots = item.lots.filter(lot => {
+        const days = (new Date(lot.expiry) - new Date()) / (1000 * 60 * 60 * 24);
+        return days >= 0 && days <= 30;
+    });
+    const activeLots = item.lots.filter(lot => new Date(lot.expiry) >= new Date());
+    const movementLogs = [...db.logs]
+        .filter(log => log.details && log.details.includes(item.name))
+        .slice(-8)
+        .reverse();
 
-    const lotsHtml = item.lots.map(lot => {
-        const isExpired = new Date(lot.expiry) < new Date();
+    const lotsHtml = item.lots.map((lot, index) => {
+        const lifecycle = getLotLifecycle(lot.expiry);
+        const isFefo = index === 0;
         return `
-            <div class="rounded-2xl border ${isExpired ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'} p-4">
+            <div class="rounded-2xl border ${lifecycle.label === 'Expired' ? 'border-red-200 bg-red-50' : lifecycle.label === 'Near Expiry' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'} p-4">
                 <div class="flex justify-between items-start gap-3">
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
                         <p class="text-sm font-mono font-bold text-slate-900">${lot.batch}</p>
                     </div>
-                    <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${isExpired ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${isExpired ? 'Expired' : 'Active'}</span>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="px-2 py-1 rounded-full border text-[9px] font-black uppercase ${lifecycle.chipClass}">${lifecycle.label}</span>
+                        ${isFefo ? '<span class="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black uppercase">FEFO Priority</span>' : ''}
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3 mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expiry</p>
-                        <p class="text-sm font-bold ${isExpired ? 'text-red-700' : 'text-slate-800'}">${lot.expiry}</p>
+                        <p class="text-sm font-bold ${lifecycle.textClass}">${lot.expiry}</p>
                     </div>
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Quantity</p>
                         <p class="text-sm font-bold text-slate-800">${lot.quantity} units</p>
                     </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Shelf Life</p>
+                        <p class="text-sm font-bold ${lifecycle.textClass}">${lifecycle.subtitle}</p>
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
+
+    const movementHtml = movementLogs.length > 0 ? movementLogs.map(log => `
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${log.type.replace(/_/g, ' ')}</p>
+                <p class="text-[10px] font-bold text-slate-500">${new Date(log.timestamp).toLocaleString()}</p>
+            </div>
+            <p class="text-sm font-bold text-slate-800 mt-2 leading-relaxed">${log.details}</p>
+        </div>
+    `).join('') : `
+        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+            <p class="text-sm font-bold text-slate-500">No recent movement logs found for this medication yet.</p>
+        </div>
+    `;
 
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4';
@@ -1291,13 +1465,52 @@ window.showInventoryLots = function(itemId) {
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inventory Batch View</p>
                     <h3 class="text-2xl font-black tracking-tight">${item.name}</h3>
+                    <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">FEFO managed • Batch-aware stock control</p>
                 </div>
                 <button onclick="this.closest('.fixed').remove()" class="p-3 bg-white/10 rounded-full">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto max-h-[65vh] space-y-4 custom-scrollbar">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Quantity</p>
+                        <p class="text-xl font-black text-slate-900 mt-2">${item.quantity}</p>
+                    </div>
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">Active Lots</p>
+                        <p class="text-xl font-black text-blue-800 mt-2">${activeLots.length}</p>
+                    </div>
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest">Near Expiry</p>
+                        <p class="text-xl font-black text-amber-800 mt-2">${nearExpiryLots.length}</p>
+                    </div>
+                    <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+                        <p class="text-[9px] font-black text-red-600 uppercase tracking-widest">Expired Lots</p>
+                        <p class="text-xl font-black text-red-800 mt-2">${expiredLots.length}</p>
+                    </div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">FEFO Priority Batch</p>
+                    <p class="text-sm font-mono font-bold text-slate-900 mt-2">${item.batch}</p>
+                    <p class="text-[10px] font-bold text-slate-500 mt-1">Next expiry in use: ${item.expiry}</p>
+                </div>
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                    <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Batch Governance</p>
+                    <p class="text-sm font-bold text-indigo-900 mt-2 leading-relaxed">Each replenishment creates a new batch record with its own expiry date and quantity. Issue reporting can remove stock from a specific batch, including expired lots.</p>
+                </div>
                 ${lotsHtml}
+                <div class="pt-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">Recent Inventory Movements</p>
+                            <p class="text-xs font-bold text-slate-500 mt-1">Restock, decommission, and issue-related activity for this medication.</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        ${movementHtml}
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -1319,7 +1532,9 @@ function renderInventory() {
         refreshInventoryDerivedFields(item);
         const isLow = item.quantity < 10;
         if (isLow) lowCount++;
-        
+        const expiredLots = (item.lots || []).filter(lot => getLotLifecycle(lot.expiry).label === 'Expired').length;
+        const nearExpiryLots = (item.lots || []).filter(lot => getLotLifecycle(lot.expiry).label === 'Near Expiry').length;
+        const fefoLot = item.lots && item.lots.length ? [...item.lots].sort((a, b) => new Date(a.expiry) - new Date(b.expiry))[0] : null;
         const div = document.createElement('div');
         // Mobile-friendly card layout that switches to grid on desktop
         div.className = 'p-5 md:p-6 border-b border-slate-100 hover:bg-slate-50 transition-all group';
@@ -1340,6 +1555,8 @@ function renderInventory() {
                     <div class="flex flex-wrap gap-2 mt-2">
                         <span class="hidden md:inline-block text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">ID: ${item.id}</span>
                         <button onclick="showInventoryLots('${item.id}')" class="text-[9px] font-black px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100">View ${item.lotCount || item.lots?.length || 1} Batches</button>
+                        ${expiredLots > 0 ? `<span class="text-[9px] font-black px-2 py-0.5 bg-red-50 text-red-700 rounded-full">${expiredLots} expired</span>` : ''}
+                        ${nearExpiryLots > 0 ? `<span class="text-[9px] font-black px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">${nearExpiryLots} near expiry</span>` : ''}
                     </div>
                 </div>
 
@@ -1348,6 +1565,7 @@ function renderInventory() {
                     <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
                     <p class="text-xs font-mono font-bold text-slate-700 text-right md:text-left">${item.batch}</p>
                     <p class="text-[8px] font-bold text-slate-400 text-right md:text-left mt-1">${item.lotCount || item.lots?.length || 1} batch(es)</p>
+                    ${fefoLot ? `<p class="text-[8px] font-bold text-blue-600 text-right md:text-left mt-1">FEFO: ${fefoLot.batch}</p>` : ''}
                 </div>
 
                 <!-- Stock -->
