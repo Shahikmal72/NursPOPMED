@@ -17,7 +17,6 @@ const MASTER_USERS = [
     { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Nurse' },
     { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse Manager' },
     { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
-    { fullname: 'Ms. Nurul Najwa Rostam', id: 'Najwa_Rostam', password: 'Najwa123', role: 'Nurse' },
     { fullname: 'Mr. Danial Imran', id: 'Danial_Imran', password: 'Dan123', role: 'Nurse' },
     { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Medical Doctor' },
     { fullname: 'Sir Farhan Mahmud', id: 'Farhan_Mahmud', password: 'Farhan123', role: 'Director of Nursing' },
