@@ -11,6 +11,81 @@ function formatDateTime(date) {
     });
 }
 
+function resolveMedicationProtocol(db, medName) {
+    let protocol = db.medicationProtocols[medName];
+    let resolvedName = medName;
+
+    const normalize = (name) => name.toLowerCase()
+        .replace(/tab|tablet|cap|capsule|inj|injection|iv|susp|suspension|mg|ml|units/g, '')
+        .replace(/[\(\)%\/]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!protocol) {
+        const keys = Object.keys(db.medicationProtocols);
+        const cleanMedName = normalize(medName);
+
+        const fuzzyKey = keys.find(key => {
+            const cleanKey = normalize(key);
+            return cleanKey === cleanMedName ||
+                cleanKey.includes(cleanMedName) ||
+                cleanMedName.includes(cleanKey) ||
+                key.toLowerCase().includes(medName.toLowerCase()) ||
+                medName.toLowerCase().includes(key.toLowerCase());
+        });
+
+        if (fuzzyKey) {
+            protocol = db.medicationProtocols[fuzzyKey];
+            resolvedName = fuzzyKey;
+        }
+    }
+
+    return { protocol, resolvedName };
+}
+
+function getMedicationEducationBundle(medName, med = null, db = getDB()) {
+    const { protocol, resolvedName } = resolveMedicationProtocol(db, medName);
+    if (!protocol) return null;
+
+    const he = protocol.he || {};
+    const notes = he.educationNotes || {};
+
+    return {
+        protocol,
+        resolvedName,
+        references: he.references || [he.citation].filter(Boolean),
+        sections: [
+            { key: 'purpose', title: 'Therapeutic Purpose', accent: 'green', notes: notes.purpose || [] },
+            { key: 'use', title: 'How To Use / Administration Notes', accent: 'blue', notes: notes.use || [] },
+            { key: 'monitoring', title: 'Monitoring & Follow-Up', accent: 'indigo', notes: notes.monitoring || [] },
+            { key: 'sideEffects', title: 'Side Effects To Watch', accent: 'red', notes: notes.sideEffects || [] },
+            { key: 'redFlags', title: 'When To Get Help Urgently', accent: 'amber', notes: notes.redFlags || [] },
+            { key: 'counselling', title: 'Counselling Advice', accent: 'slate', notes: notes.counselling || [] }
+        ].filter(section => section.notes.length > 0),
+        displayDose: med?.dose || '',
+        displayRoute: med?.route || '',
+        displayFrequency: med?.frequency || '',
+        rawEducation: he
+    };
+}
+
+function renderCitationBadge(citation, extraClasses = '') {
+    return `<p class="text-[10px] font-semibold leading-relaxed text-slate-500 mt-2 ${extraClasses}">APA 7: ${citation}</p>`;
+}
+
+function renderEducationNotesList(notes, listClass = 'space-y-3') {
+    return `
+        <div class="${listClass}">
+            ${notes.map(note => `
+                <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+                    <p class="text-sm font-semibold leading-relaxed text-slate-800">${note.text}</p>
+                    ${renderCitationBadge(note.citation)}
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 function generateLog(action, nurseId, details) {
     const db = getDB();
     const log = {
@@ -1001,6 +1076,270 @@ function generateAllHEPrint(patient) {
 
                 <div class="no-print">
                     <button class="print-btn" onclick="window.print()">🖨️ Print Education Guide</button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const w = window.open('', '', 'width=950,height=900');
+    w.document.write(content);
+    w.document.close();
+}
+
+function buildEducationPrintSection(section) {
+    return `
+        <div style="margin-bottom: 28px;">
+            <div style="font-size: 15px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; border-left: 6px solid #1e3a8a; padding-left: 14px; margin-bottom: 14px;">
+                ${section.title}
+            </div>
+            <div style="display: grid; gap: 12px;">
+                ${section.notes.map(note => `
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px;">
+                        <p style="margin: 0; font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.6;">${note.text}</p>
+                        <p style="margin: 10px 0 0 0; font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.5;">APA 7: ${note.citation}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function showHEModal(patient, med) {
+    const db = getDB();
+    const education = getMedicationEducationBundle(med.name, med, db);
+    if (!education) {
+        showNotification(`Clinical Protocol is not available for ${med.name}. Please check a verified drug reference.`, 'info');
+        return;
+    }
+
+    const { protocol, sections, references } = education;
+    const modal = document.createElement('div');
+    modal.id = 'he-mobile-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[500] flex flex-col animate-fade-in';
+
+    modal.innerHTML = `
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-5 text-white shrink-0 sticky top-0 z-10 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black tracking-tight leading-none">Health Education</h2>
+                        <p class="text-[9px] font-bold text-blue-200 uppercase tracking-widest mt-1">Medication Protocol</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('he-mobile-modal').remove()" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-90">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10">
+                <p class="text-[9px] font-black text-blue-100 uppercase tracking-widest mb-1 opacity-70">Medication Identified</p>
+                <h3 class="text-lg font-black text-white">${med.name}</h3>
+                <p class="text-[10px] font-bold text-blue-200 uppercase tracking-widest mt-1">${med.dose} • ${med.route}${med.frequency ? ` • ${med.frequency}` : ''}</p>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-5 space-y-5 pb-28">
+            ${protocol && protocol.isHighAlert ? `
+                <div class="bg-red-50 border-2 border-red-200 p-5 rounded-3xl flex items-start gap-4">
+                    <div class="text-2xl font-black text-red-600">!</div>
+                    <div>
+                        <h4 class="text-xs font-black text-red-700 uppercase tracking-widest mb-1">High-Alert Protocol</h4>
+                        <p class="text-[11px] font-bold text-red-900/70 leading-relaxed">This medication requires extra caution. Follow all safety checks strictly.</p>
+                    </div>
+                </div>
+            ` : ''}
+
+            ${sections.map(section => `
+                <section class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-4 bg-${section.accent}-600 rounded-full"></div>
+                        <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">${section.title}</h4>
+                    </div>
+                    ${renderEducationNotesList(section.notes)}
+                </section>
+            `).join('')}
+
+            <section class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-indigo-600 rounded-full"></div>
+                    <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Preparation & Administration Reference</h4>
+                </div>
+                <div class="bg-indigo-50/50 p-5 rounded-3xl border border-indigo-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="bg-white/70 p-3 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Diluent</p>
+                            <p class="text-[10px] font-bold text-slate-800">${protocol.diluent || 'N/A'}</p>
+                        </div>
+                        <div class="bg-white/70 p-3 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume</p>
+                            <p class="text-[10px] font-bold text-slate-800">${protocol.volume || 'N/A'}</p>
+                        </div>
+                        <div class="bg-white/70 p-3 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Stability</p>
+                            <p class="text-[10px] font-bold text-slate-800">${protocol.stability || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-6 border-t border-slate-100 flex flex-col items-center gap-4 text-center">
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Clinical Digital Stamp</p>
+                    ${generateNurseStamp(currentUser.fullname, currentUser.role)}
+                </div>
+                <div class="w-full rounded-3xl bg-white/5 p-4 text-left border border-white/5">
+                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References (APA 7th Ed.)</p>
+                    <div class="space-y-2">
+                        ${references.map(citation => `<p class="text-[11px] font-semibold text-slate-200 leading-relaxed">${citation}</p>`).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/10 flex gap-3">
+            <button onclick="document.getElementById('he-mobile-modal').remove()" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border border-white/5">Close</button>
+            <button onclick="generateHEPamphlet(${JSON.stringify(patient).replace(/"/g, '&quot;')}, ${JSON.stringify(med).replace(/"/g, '&quot;')}); document.getElementById('he-mobile-modal').remove()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/40 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print PDF
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+function generateHEPamphlet(patient, med) {
+    const db = getDB();
+    const education = getMedicationEducationBundle(med.name, med, db);
+    if (!education) {
+        showNotification(`Clinical Protocol is not available for ${med.name}. Please check a verified drug reference.`, 'info');
+        return;
+    }
+
+    const { protocol, sections, references } = education;
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Patient Education: ${med.name}</title>
+            <style>
+                @page { size: A4; margin: 1.2cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.5; color: #1e293b; margin: 0; padding: 24px; background: #f8fafc; }
+                .pamphlet-container { max-width: 900px; margin: auto; background: white; padding: 36px; border-radius: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.06); }
+                .header { text-align: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 28px; }
+                .hospital-name { font-size: 28px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.03em; }
+                .subtitle { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.25em; margin-top: 8px; }
+                .patient-box { background: #f1f5f9; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; margin-bottom: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+                .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.08em; }
+                .value { font-size: 15px; font-weight: 800; color: #0f172a; }
+                .protocol-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+                .protocol-item { background: #eef2ff; padding: 14px; border-radius: 14px; border: 1px solid #c7d2fe; }
+                .refs { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                .stamp-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-top: 28px; }
+                .no-print { text-align: center; margin-top: 36px; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 16px 36px; border-radius: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.12em; }
+                @media print { .no-print { display: none; } body { padding: 0; background: white; } .pamphlet-container { box-shadow: none; border-radius: 0; padding: 12px; } }
+            </style>
+        </head>
+        <body>
+            <div class="pamphlet-container">
+                <div class="header">
+                    <div class="hospital-name">Kulliyyah of Nursing • IIUM</div>
+                    <div class="subtitle">Comprehensive Patient Medication Education Guide</div>
+                </div>
+                <div class="patient-box">
+                    <div><div class="label">Patient</div><div class="value">${patient.info.name}</div></div>
+                    <div><div class="label">MRN</div><div class="value">${patient.info.mrn}</div></div>
+                    <div><div class="label">Medication</div><div class="value">${med.name}</div></div>
+                    <div><div class="label">Dose / Route / Frequency</div><div class="value">${med.dose} • ${med.route}${med.frequency ? ` • ${med.frequency}` : ''}</div></div>
+                </div>
+                <div class="protocol-grid">
+                    <div class="protocol-item"><div class="label">Diluent</div><div class="value" style="font-size: 12px;">${protocol.diluent || 'N/A'}</div></div>
+                    <div class="protocol-item"><div class="label">Volume</div><div class="value" style="font-size: 12px;">${protocol.volume || 'N/A'}</div></div>
+                    <div class="protocol-item"><div class="label">Stability</div><div class="value" style="font-size: 12px;">${protocol.stability || 'N/A'}</div></div>
+                </div>
+                ${sections.map(buildEducationPrintSection).join('')}
+                <div class="stamp-row">
+                    <div>
+                        <div class="label">Clinical Educator (Digital Stamp)</div>
+                        ${generateNurseStamp(currentUser.fullname, currentUser.role)}
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="label">Printed</div>
+                        <div class="value" style="font-size: 13px;">${new Date().toLocaleString()}</div>
+                    </div>
+                </div>
+                <div class="refs">
+                    <div class="label">Evidence-Based References (APA 7th Ed.)</div>
+                    ${references.map(citation => `<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #475569; line-height: 1.6;">${citation}</p>`).join('')}
+                </div>
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">Print Education Guide</button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const w = window.open('', '', 'width=980,height=920');
+    w.document.write(content);
+    w.document.close();
+}
+
+function generateAllHEPrint(patient) {
+    const db = getDB();
+    const medEducationContent = patient.medications.map(med => {
+        const education = getMedicationEducationBundle(med.name, med, db);
+        if (!education) return '';
+
+        return `
+            <div class="med-he-block" style="break-inside: avoid; margin-bottom: 36px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px;">
+                    <h3 style="font-size: 20px; font-weight: 900; color: #1e3a8a; margin: 0;">${med.name}</h3>
+                    <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">${med.dose} • ${med.route}${med.frequency ? ` • ${med.frequency}` : ''}</span>
+                </div>
+                ${education.sections.slice(0, 4).map(buildEducationPrintSection).join('')}
+            </div>
+        `;
+    }).join('');
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Patient Education Summary: ${patient.info.name}</title>
+            <style>
+                @page { size: A4; margin: 1.2cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.4; color: #0f172a; margin: 0; padding: 20px; background: #fff; }
+                .print-container { max-width: 920px; margin: auto; }
+                .header { border-bottom: 4px solid #1e3a8a; padding-bottom: 18px; margin-bottom: 30px; text-align: center; }
+                .hospital-name { font-size: 28px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
+                .subtitle { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.25em; margin-top: 5px; }
+                .patient-info { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; gap: 12px; }
+                .info-item .label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+                .info-item .value { font-size: 14px; font-weight: 700; color: #1e293b; }
+                .no-print { text-align: center; margin-top: 30px; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 15px 40px; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                <div class="header">
+                    <h1 class="hospital-name">Kulliyyah of Nursing • IIUM</h1>
+                    <p class="subtitle">Comprehensive Medication Education Summary</p>
+                </div>
+                <div class="patient-info">
+                    <div class="info-item"><div class="label">Patient Name</div><div class="value">${patient.info.name}</div></div>
+                    <div class="info-item"><div class="label">MRN / RN</div><div class="value">${patient.info.mrn}</div></div>
+                    <div class="info-item"><div class="label">Date Generated</div><div class="value">${new Date().toLocaleDateString()}</div></div>
+                </div>
+                <div class="education-content">${medEducationContent}</div>
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">Print Education Guide</button>
                 </div>
             </div>
         </body>

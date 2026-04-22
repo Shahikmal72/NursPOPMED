@@ -5,12 +5,13 @@ const initialData = {
         { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse' },
         { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
         { fullname: 'Mr. Danial Imran', id: 'Danial_Imran', password: 'Dan123', role: 'Nurse' },
-        { fullname: 'Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Pharmacist' },
+        { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Medical Doctor' },
+        { fullname: 'Sir Farhan Mahmud', id: 'Farhan_Mahmud', password: 'Farhan123', role: 'Director of Nursing' },
         { fullname: 'Dr. Syamsul Ahmad Arifin', id: 'Syamsul_Arifin', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Mohd Azri Abd Jalil', id: 'Azri_AbdJalil', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Sarah Zulifli', id: 'Sarah_Zulifli', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Shidqiyyah Abd Hamid', id: 'Shidqiyyah_Hamid', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'Admin' }, 
+        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'System Assessor' }, 
         { fullname: 'Dr. Siti Noorkhairina Binti Sowtali', id: 'Siti_Noorkhairina', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Sanisah Saidi', id: 'Sanisah_Saidi', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Mohd Said Nurumal', id: 'Mohd_Said', password: 'Doc123', role: 'Medical Doctor' },
@@ -20,7 +21,7 @@ const initialData = {
         { fullname: 'Dr. Kamil Che Hassan', id: 'Kamil_Hassan', password: 'Doc123', role: 'Medical Doctor' },
         { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
         { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'Admin' }, 
+        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'System Assessor' }, 
     ],
     medications: {
         oral: [
@@ -631,8 +632,206 @@ const initialData = {
     }
 };
 
+const POPMED_SHARED_HE_REFERENCES = {
+    medlineplus: 'National Library of Medicine. (2025). MedlinePlus: Drugs, herbs and supplements. U.S. National Library of Medicine. https://medlineplus.gov/druginformation.html',
+    fdaMedicines: 'U.S. Food and Drug Administration. (2025, May 14). Learn about your medicines. https://www.fda.gov/patients/learn-about-your-medicines',
+    fdaDrugInfo: 'U.S. Food and Drug Administration. (2025, May 14). Find information about a drug. https://www.fda.gov/drugs/information-consumers-and-patients-drugs/find-information-about-drug'
+};
+
+function uniqueCitations(citations) {
+    return [...new Set(citations.filter(Boolean))];
+}
+
+function normalizeSideEffects(sideEffects) {
+    if (Array.isArray(sideEffects)) return sideEffects.filter(Boolean);
+    if (!sideEffects) return [];
+    return String(sideEffects)
+        .split(/,|;/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
+function makeEducationNote(text, citation) {
+    return { text, citation };
+}
+
+function buildMedicationEducationNotes(medName, protocol) {
+    const he = protocol.he || {};
+    const primaryCitation = he.citation || POPMED_SHARED_HE_REFERENCES.medlineplus;
+    const sideEffects = normalizeSideEffects(he.sideEffects);
+    const lowerName = medName.toLowerCase();
+
+    const notes = {
+        purpose: [
+            makeEducationNote(he.reason || `${medName} is prescribed to manage a specific clinical condition identified by the treating team.`, primaryCitation),
+            makeEducationNote('Make sure you understand the medicine name, the reason it was prescribed, and the expected benefit before each dose or administration.', POPMED_SHARED_HE_REFERENCES.fdaMedicines)
+        ],
+        use: [
+            makeEducationNote(protocol.instructions || 'Use this medicine exactly as directed by the doctor, nurse, or pharmacist. Do not change the dose or schedule on your own.', primaryCitation),
+            makeEducationNote('Tell the nurse immediately if the medicine looks cloudy, discoloured, leaking, or different from what you usually receive.', POPMED_SHARED_HE_REFERENCES.fdaDrugInfo)
+        ],
+        monitoring: [
+            makeEducationNote('Keep your follow-up assessments, because monitoring helps the team confirm the medicine is working and detect problems early.', POPMED_SHARED_HE_REFERENCES.fdaMedicines)
+        ],
+        sideEffects: sideEffects.length
+            ? sideEffects.map(effect => makeEducationNote(`Possible side effect: ${effect}. Tell the nurse if it is severe, persistent, or worsening.`, primaryCitation))
+            : [makeEducationNote('Possible side effects vary by patient. Report new symptoms promptly so the team can assess whether they are medicine-related.', POPMED_SHARED_HE_REFERENCES.medlineplus)],
+        redFlags: [
+            makeEducationNote('Get urgent help right away for difficulty breathing, swelling of the lips or face, widespread rash, fainting, severe chest pain, or sudden confusion after receiving a medicine.', POPMED_SHARED_HE_REFERENCES.fdaMedicines)
+        ],
+        counselling: [
+            makeEducationNote('Do not start over-the-counter medicines, herbal products, or supplements without checking with your healthcare team, because interactions may change safety or effectiveness.', POPMED_SHARED_HE_REFERENCES.fdaDrugInfo)
+        ]
+    };
+
+    if (protocol.isHighAlert) {
+        notes.monitoring.push(
+            makeEducationNote('This is a high-alert medicine, so extra checking is used to reduce the risk of dosing, administration, or monitoring errors.', POPMED_SHARED_HE_REFERENCES.fdaMedicines)
+        );
+    }
+
+    if (protocol.isLASA) {
+        notes.monitoring.push(
+            makeEducationNote(`This medicine has a look-alike/sound-alike risk. Staff should confirm the exact name carefully before administration. ${protocol.lasaNote || ''}`.trim(), primaryCitation)
+        );
+    }
+
+    if (protocol.containsPorcine) {
+        notes.counselling.push(
+            makeEducationNote('This product may contain porcine-derived material. If you have religious or cultural concerns, discuss them with the care team so options can be reviewed appropriately.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('antibiotic') || ['ceftriaxone', 'vancomycin', 'meropenem', 'amoxicillin', 'gentamicin', 'metronidazole', 'piperacillin'].some(term => lowerName.includes(term))) {
+        notes.use.push(
+            makeEducationNote('Antibiotics work best when doses are given at the planned intervals. Do not skip doses, and complete the full prescribed course unless the doctor changes the plan.', primaryCitation)
+        );
+        notes.redFlags.push(
+            makeEducationNote('Report severe diarrhea, persistent vomiting, new rash, or symptoms of allergy during antibiotic therapy, because these may need prompt review.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('insulin') || lowerName.includes('gliclazide') || lowerName.includes('metformin')) {
+        notes.monitoring.push(
+            makeEducationNote('Blood glucose monitoring is important with diabetes medicines so treatment can be adjusted safely and hypoglycemia or hyperglycemia can be detected early.', primaryCitation)
+        );
+        notes.redFlags.push(
+            makeEducationNote('Tell the nurse immediately if you feel shaky, sweaty, very hungry, dizzy, confused, or unusually sleepy, because these may be signs of hypoglycemia.', primaryCitation)
+        );
+        notes.counselling.push(
+            makeEducationNote('Try to keep meals and snacks consistent with the treatment plan, because timing of food intake can affect glucose control and medicine safety.', POPMED_SHARED_HE_REFERENCES.medlineplus)
+        );
+    }
+
+    if (lowerName.includes('heparin') || lowerName.includes('enoxaparin') || lowerName.includes('aspirin') || lowerName.includes('clopidogrel')) {
+        notes.monitoring.push(
+            makeEducationNote('Watch for bruising, gum bleeding, nosebleeds, blood in urine, black stools, or unusual bleeding, because anticoagulant and antiplatelet medicines can increase bleeding risk.', primaryCitation)
+        );
+        notes.counselling.push(
+            makeEducationNote('Use a soft toothbrush, shave carefully, and inform staff before procedures or injections to reduce bleeding risk.', POPMED_SHARED_HE_REFERENCES.medlineplus)
+        );
+    }
+
+    if (lowerName.includes('morphine') || lowerName.includes('pethidine') || lowerName.includes('midazolam')) {
+        notes.monitoring.push(
+            makeEducationNote('Sedating medicines may affect alertness, breathing, and mobility, so nurses may monitor your breathing rate, sedation level, and oxygenation closely.', primaryCitation)
+        );
+        notes.redFlags.push(
+            makeEducationNote('Report extreme drowsiness, slowed breathing, inability to stay awake, or new confusion urgently after sedating or opioid medicines.', primaryCitation)
+        );
+        notes.counselling.push(
+            makeEducationNote('Ask for help before walking if you feel drowsy or dizzy, because these medicines can increase fall risk.', POPMED_SHARED_HE_REFERENCES.medlineplus)
+        );
+    }
+
+    if (lowerName.includes('amlodipine') || lowerName.includes('perindopril') || lowerName.includes('bisoprolol') || lowerName.includes('dopamine') || lowerName.includes('noradrenaline')) {
+        notes.monitoring.push(
+            makeEducationNote('Blood pressure and pulse monitoring help ensure cardiovascular medicines are effective without causing excessive hypotension or rhythm changes.', primaryCitation)
+        );
+        notes.counselling.push(
+            makeEducationNote('Rise slowly from sitting or lying positions if you feel light-headed, and tell staff if you have persistent dizziness or palpitations.', POPMED_SHARED_HE_REFERENCES.medlineplus)
+        );
+    }
+
+    if (lowerName.includes('furosemide')) {
+        notes.monitoring.push(
+            makeEducationNote('Diuretics may increase urine output and can affect fluid balance and electrolytes, so the team may monitor weight, blood pressure, urine output, and blood tests.', primaryCitation)
+        );
+        notes.counselling.push(
+            makeEducationNote('Tell staff if you feel very thirsty, develop muscle cramps, or notice marked dizziness, because these may suggest dehydration or electrolyte changes.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('simvastatin')) {
+        notes.redFlags.push(
+            makeEducationNote('Report unexplained muscle pain, weakness, or dark urine promptly, because these symptoms can signal a serious muscle-related adverse reaction.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('ibuprofen') || lowerName.includes('aspirin')) {
+        notes.counselling.push(
+            makeEducationNote('Take oral NSAID medicines with food when appropriate to reduce stomach irritation, unless your clinician gives different instructions.', primaryCitation)
+        );
+        notes.redFlags.push(
+            makeEducationNote('Tell the team if you have severe stomach pain, vomit blood, or pass black stools, because these may indicate gastrointestinal bleeding.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('pantoprazole')) {
+        notes.use.push(
+            makeEducationNote('This medicine helps reduce stomach acid and may be used to protect the stomach or treat acid-related symptoms while other treatments are ongoing.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('potassium chloride') || lowerName.includes('magnesium sulphate') || lowerName.includes('calcium gluconate')) {
+        notes.monitoring.push(
+            makeEducationNote('Electrolyte medicines often require close laboratory monitoring and careful infusion rates because too little or too much electrolyte can be dangerous.', primaryCitation)
+        );
+        notes.redFlags.push(
+            makeEducationNote('Inform staff quickly if you develop palpitations, chest discomfort, marked weakness, tingling, or worsening muscle cramps during therapy.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('sodium chloride') || lowerName.includes('dextrose') || lowerName.includes('ringer') || lowerName.includes('hartmann')) {
+        notes.purpose.push(
+            makeEducationNote('IV fluids may be used to maintain hydration, support circulation, replace losses, or serve as a carrier for IV medicines according to your treatment plan.', primaryCitation)
+        );
+        notes.monitoring.push(
+            makeEducationNote('Fluid balance may be monitored through vital signs, urine output, swelling, breathlessness, and laboratory results to avoid overload or dehydration.', primaryCitation)
+        );
+    }
+
+    if (lowerName.includes('sterile water')) {
+        notes.use = [
+            makeEducationNote('Sterile water for injection is a preparation fluid used by staff for reconstitution. It is not a medicine for direct IV administration on its own.', primaryCitation)
+        ];
+        notes.redFlags = [
+            makeEducationNote('This item should only be used as directed by trained staff during medicine preparation. It should not be self-administered.', primaryCitation)
+        ];
+    }
+
+    const references = uniqueCitations([
+        primaryCitation,
+        POPMED_SHARED_HE_REFERENCES.medlineplus,
+        POPMED_SHARED_HE_REFERENCES.fdaMedicines,
+        POPMED_SHARED_HE_REFERENCES.fdaDrugInfo
+    ]);
+
+    return {
+        ...he,
+        sideEffects,
+        educationNotes: notes,
+        references
+    };
+}
+
+Object.keys(initialData.medicationProtocols).forEach(medName => {
+    const protocol = initialData.medicationProtocols[medName];
+    protocol.he = buildMedicationEducationNotes(medName, protocol);
+});
+
 // Initialize localStorage if empty
-const DB_VERSION = '2.2'; // Increment this to force a database update
+const DB_VERSION = '2.3'; // Keep current version; sync logic already refreshes protocol data safely
 
 function generateInitialPatients(data) {
     const firstNames = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'];
@@ -777,7 +976,7 @@ function initializeDB() {
     
     // Proactive Sync: Ensure users, developers, supervisor, inventory, medications and protocols are always up to date
     if (existingDB && typeof existingDB === 'object') {
-        // Sync Users (preserve any dynamic data if added, but update base properties)
+        // MANDATORY SYNC: Always sync users to ensure passwords from data.js are applied
         existingDB.users = initialData.users;
         
         // Sync Developers and Supervisor
@@ -828,10 +1027,6 @@ function initializeDB() {
                         // Preserve the time (hours, minutes) but update to current date
                         const newDue = new Date(startOfToday.getTime());
                         newDue.setHours(oldDue.getHours(), oldDue.getMinutes(), oldDue.getSeconds());
-                        
-                        // If the updated date is still in the past (more than 24h ago), 
-                        // it means it was a multi-day simulation. For simplicity, 
-                        // we just ensure they are all on the CURRENT date.
                         med.timeDue = newDue.toISOString();
                     });
                 }
@@ -849,9 +1044,7 @@ function initializeDB() {
         ];
 
         allMedNames.forEach(name => {
-            // Check if item exists in inventory (fuzzy check to avoid duplicates)
             const exists = existingDB.inventory.find(i => i.name === name);
-            
             if (!exists) {
                 const isControlled = name.toLowerCase().includes('controlled drug') || name.toLowerCase().includes('morphine') || name.toLowerCase().includes('pethidine');
                 const isHighAlert = name.toLowerCase().includes('high alert') || name.toLowerCase().includes('potassium') || name.toLowerCase().includes('insulin');
@@ -874,6 +1067,7 @@ function initializeDB() {
         });
 
         localStorage.setItem('popmed_db', JSON.stringify(existingDB));
+        console.log('POPMED Database Synced Successfully');
     }
 
     if (!existingDB) { 
@@ -922,19 +1116,38 @@ function initializeDB() {
     }
 }
 
+function syncReferenceData(db, options = {}) {
+    if (!db || typeof db !== 'object') return db;
+
+    db.users = initialData.users;
+    db.developers = initialData.developers;
+    db.supervisor = initialData.supervisor;
+    db.medications = initialData.medications;
+    db.medicationProtocols = initialData.medicationProtocols;
+    db.ivSolutions = initialData.ivSolutions;
+    db.doctors = initialData.doctors;
+
+    if (options.persist) {
+        localStorage.setItem('popmed_db', JSON.stringify(db));
+    }
+
+    return db;
+}
+
 function getDB() {
     try {
         const data = localStorage.getItem('popmed_db');
         if (!data) {
             initializeDB();
-            return JSON.parse(localStorage.getItem('popmed_db'));
+            return syncReferenceData(JSON.parse(localStorage.getItem('popmed_db')), { persist: true });
         }
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        return syncReferenceData(parsed, { persist: true });
     } catch (e) {
         console.error('Database Retrieval Error:', e);
         localStorage.removeItem('popmed_db');
         initializeDB();
-        return initialData;
+        return syncReferenceData(structuredClone(initialData), { persist: true });
     }
 }
 

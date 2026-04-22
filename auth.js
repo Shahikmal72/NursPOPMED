@@ -3,24 +3,51 @@
 let currentUser = null;
 let sessionTimeout = null;
 
+function normalizeUserIdentifier(userId) {
+    return (userId || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function findUserInDB(userId, db = getDB()) {
+    const normalizedInput = normalizeUserIdentifier(userId);
+    return db.users.find(u => normalizeUserIdentifier(u.id) === normalizedInput) || null;
+}
+
+function persistCurrentUserSession(user) {
+    sessionStorage.setItem('popmed_user_id', user.id);
+    sessionStorage.setItem('popmed_user', JSON.stringify(user));
+}
+
+function syncCurrentUserFromDB() {
+    const db = getDB();
+    const savedUserId = sessionStorage.getItem('popmed_user_id');
+    const savedLegacyUser = sessionStorage.getItem('popmed_user');
+    const candidateId = savedUserId || (savedLegacyUser ? JSON.parse(savedLegacyUser).id : '');
+    const latestUser = candidateId ? findUserInDB(candidateId, db) : null;
+
+    if (!latestUser) {
+        currentUser = null;
+        sessionStorage.removeItem('popmed_user_id');
+        sessionStorage.removeItem('popmed_user');
+        return null;
+    }
+
+    currentUser = latestUser;
+    if (!currentUser.role) currentUser.role = 'Clinical Staff';
+    persistCurrentUserSession(currentUser);
+    return currentUser;
+}
+
 function login(userId, password) {
     const db = getDB();
     if (!userId || !password) return { success: false, message: 'Please enter both Clinical ID and Security Key.' };
 
-    // Allow matching with either space or underscore, case-insensitive
-    const normalizedInput = userId.trim().toLowerCase().replace(/\s+/g, '_');
+    const user = findUserInDB(userId, db);
     
-    const user = db.users.find(u => {
-        const normalizedDBId = u.id.toLowerCase();
-        return (normalizedDBId === normalizedInput || u.id === userId) && u.password === password;
-    });
-    
-    if (user) {
+    if (user && user.password === password) {
         currentUser = user;
-        // Ensure the role exists, fallback if missing
         if (!currentUser.role) currentUser.role = 'Clinical Staff';
         
-        sessionStorage.setItem('popmed_user', JSON.stringify(currentUser));
+        persistCurrentUserSession(currentUser);
         resetSessionTimeout();
         generateLog('LOGIN', currentUser.id, 'User logged in');
         return { success: true, user: currentUser };
@@ -55,6 +82,7 @@ function logout() {
         // Delay reload to show greeting
         setTimeout(() => {
             currentUser = null;
+            sessionStorage.removeItem('popmed_user_id');
             sessionStorage.removeItem('popmed_user');
             clearTimeout(sessionTimeout);
             window.location.reload();
@@ -74,9 +102,7 @@ function resetSessionTimeout() {
 }
 
 function checkAuth() {
-    const savedUser = sessionStorage.getItem('popmed_user');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
+    if (syncCurrentUserFromDB()) {
         resetSessionTimeout();
         return true;
     }

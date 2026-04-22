@@ -31,6 +31,16 @@
             min-height: 100vh;
         }
 
+        #app-content.compact-section-spacing {
+            padding-top: 0.5rem;
+        }
+
+        @media (min-width: 768px) {
+            #app-content.compact-section-spacing {
+                padding-top: 0.75rem;
+            }
+        }
+
         .status-green { background-color: #10B981; }
         .status-yellow { background-color: #F59E0B; }
         .status-red { background-color: #EF4444; }
@@ -509,8 +519,8 @@
     <!-- Main App Layout (Hidden by default) -->
     <div id="main-app" class="hidden flex flex-col min-h-screen">
         <!-- Navigation -->
-        <nav class="nav-gradient text-white p-4 shadow-xl flex justify-between items-center sticky top-0 z-[80]">
-            <div class="flex items-center gap-5">
+        <nav class="nav-gradient text-white p-4 shadow-xl flex flex-col xl:flex-row xl:justify-between xl:items-center items-start sticky top-0 z-[80] gap-4">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-5 w-full xl:w-auto">
                 <!-- IIUM Logo -->
                 <div class="bg-white p-1.5 rounded-xl shadow-sm">
                     <img src="logo.png" alt="IIUM Logo" class="w-10 h-10 object-contain" onerror="this.src='https://via.placeholder.com/40x40?text=LOGO'">
@@ -519,7 +529,7 @@
                     <h1 class="text-2xl font-extrabold tracking-tight leading-none">POPMED</h1>
                     <p class="text-[9px] font-bold uppercase tracking-[0.2em] opacity-70 mt-1">Kulliyyah of Nursing</p>
                 </div>
-                <div id="nav-links" class="hidden md:flex gap-6 ml-10">
+                <div id="nav-links" class="hidden md:flex flex-wrap gap-4 lg:gap-6 lg:ml-6 xl:ml-10">
                     <button onclick="showSection('dashboard')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Home</button>
                     <button onclick="showSection('cabinet1')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">ADC Unit 1</button>
                     <button onclick="showSection('cabinet2')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">BCMA Unit 2</button>
@@ -528,7 +538,7 @@
                     <button onclick="showSection('logs')" class="text-sm font-semibold hover:text-blue-200 transition-colors uppercase tracking-wider">Audit Trail</button>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
+            <div class="flex items-center justify-between md:justify-end gap-4 md:gap-6 w-full xl:w-auto">
                 <div class="flex flex-col items-end">
                     <span id="current-user-display" class="text-xs font-bold uppercase tracking-wider text-blue-100"></span>
                     <span class="text-[9px] font-bold text-blue-300 opacity-60">© Innovation in Nursing 2026</span>
@@ -548,7 +558,7 @@
         </div>
 
         <!-- Content Area -->
-        <main class="flex-grow p-4 md:p-6 overflow-y-auto">
+        <main id="app-content" class="flex-grow p-3 sm:p-4 md:p-6 overflow-y-auto">
             
             <!-- Dashboard Section -->
             <section id="dashboard-section" class="space-y-4 md:space-y-6">
@@ -692,7 +702,7 @@
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Medication Overview</h3>
                             </div>
-                            <div id="cabinet1-global-list" class="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                            <div id="cabinet1-prescription-list" class="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
@@ -872,32 +882,30 @@
                                 <input type="hidden" id="order-mrn">
                             </form>
                         </div>
-                    </div>
                 </div>
             </section>
-
             <!-- Cabinet 2 Section -->
-            <section id="cabinet2-section" class="hidden h-full overflow-y-auto pb-8">
-                <div class="max-w-[1600px] mx-auto px-4 py-4 space-y-6">
-                    <div class="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-6 md:mb-8">
-                        <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+            <section id="cabinet2-section" class="hidden h-full">
+                <div class="max-w-6xl mx-auto overflow-y-auto pb-4">
+                    <div class="bg-white p-2 md:p-3 rounded-2xl shadow-xl border border-gray-100">
+                        <div class="flex flex-col md:flex-row justify-between items-start mb-1 gap-2">
                             <div>
-                                <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">Bedside Administration</h2>
+                                <h2 class="text-2xl md:text-3xl font-black text-green-900 tracking-tighter leading-none mb-2">BCMA Unit 2: Bedside Administration</h2>
                                 <p class="text-xs md:text-sm text-gray-500 font-bold italic">Select a patient and tap "Administer Now" to record medication delivery.</p>
                             </div>
-                            <div class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-200">1-TAP ADMIN</div>
+                            <div class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-200">TAP ADMIN</div>
                         </div>
                     </div>
-                    <div id="cabinet2-grid" class="space-y-6">
+                    <div id="cabinet2-grid" class="space-y-2">
                         <!-- Bed drawers populated here -->
                     </div>
                 </div>
             </section>
 
             <!-- Cabinet 3 Section -->
-            <section id="cabinet3-section" class="hidden h-full overflow-y-auto pb-8">
-                <div class="max-w-4xl mx-auto py-4 px-4">
-                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
+            <section id="cabinet3-section" class="hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white p-4 md:p-6 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative">
                             <div class="flex flex-col md:flex-row items-center gap-6 mb-8">
                                 <div class="bg-purple-600 p-4 rounded-2xl text-white shadow-lg shadow-purple-200">
@@ -964,11 +972,11 @@
             </section>
 
             <!-- Inventory Section -->
-            <section id="inventory-section" class="hidden h-full overflow-y-auto pb-8">
-                <div class="max-w-7xl mx-auto py-4 px-4">
-                    <div class="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
+            <section id="inventory-section" class="hidden">
+                <div class="max-w-7xl mx-auto">
+                    <div class="bg-white p-4 md:p-6 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative z-10">
-                            <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-8 md:mb-12">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-8 mb-8 md:mb-12">
                                 <div>
                                     <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none mb-2">Pharmacy Inventory Management</h2>
                                     <p class="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs mt-2 italic">Real-time pharmacological stock control and supply chain monitoring</p>
@@ -1006,8 +1014,8 @@
             <!-- Logs Section -->
             <section id="logs-section" class="hidden">
                 <div class="max-w-6xl mx-auto">
-                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-100">
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div class="bg-white p-4 md:p-6 rounded-3xl shadow-2xl border border-gray-100">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                             <div>
                                 <h2 class="text-2xl md:text-3xl font-black text-blue-900 tracking-tighter leading-none mb-2">Audit Trail & eMAR Log</h2>
                                 <p class="text-xs md:text-sm text-gray-500 font-bold italic">Immutable record of pharmacological transactions and clinical administrations</p>
@@ -1142,22 +1150,13 @@
 
         function showMainApp() {
             const db = getDB();
+            const syncedUser = typeof syncCurrentUserFromDB === 'function' ? syncCurrentUserFromDB() : null;
             
-            if (!currentUser) {
-                const savedUser = sessionStorage.getItem('popmed_user');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                } else {
-                    showLoginScreen();
-                    return;
-                }
-            }
-
-            // Sync currentUser with latest DB data (in case roles or names changed in data.js)
-            const latestUserData = db.users.find(u => u.id === currentUser.id);
-            if (latestUserData) {
-                currentUser = latestUserData;
-                sessionStorage.setItem('popmed_user', JSON.stringify(currentUser));
+            if (syncedUser) {
+                currentUser = syncedUser;
+            } else if (!currentUser) {
+                showLoginScreen();
+                return;
             }
             
             document.getElementById('login-screen').classList.add('hidden');
@@ -1229,6 +1228,9 @@
         }
 
         function showSection(sectionId) {
+            const compactSections = ['cabinet2', 'cabinet3', 'inventory', 'logs'];
+            const mainContent = document.getElementById('app-content');
+
             // Hide all sections
             ['dashboard', 'cabinet1', 'cabinet2', 'cabinet3', 'inventory', 'logs'].forEach(id => {
                 const el = document.getElementById(`${id}-section`);
@@ -1236,6 +1238,12 @@
             });
             // Show target section
             document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+
+            if (mainContent) {
+                mainContent.classList.toggle('compact-section-spacing', compactSections.includes(sectionId));
+                mainContent.scrollTo({ top: 0, behavior: 'auto' });
+            }
+            window.scrollTo({ top: 0, behavior: 'auto' });
             
             // Trigger specific section renderers
             if (sectionId === 'dashboard') updateDashboard();
@@ -1629,6 +1637,102 @@
             document.body.appendChild(modal);
         }
 
+        function showMedInfo(medName) {
+            const education = getMedicationEducationBundle(medName);
+            if (!education) {
+                showNotification(`Clinical Protocol is not available for ${medName}. Please check a verified drug reference.`, 'info');
+                return;
+            }
+
+            const { protocol, resolvedName, sections, references } = education;
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 animate-fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-6xl max-h-[92vh] overflow-hidden transform animate-pop-in border border-white/20 relative flex flex-col">
+                    <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 z-20 p-2 bg-slate-900/15 hover:bg-slate-900/25 text-white rounded-full backdrop-blur-md transition-all touch-target flex items-center justify-center" aria-label="Close">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+
+                    <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-6 md:p-8 text-white relative">
+                        <div class="relative z-10">
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block backdrop-blur-md">Clinical Monograph</span>
+                            <h2 class="text-2xl md:text-4xl font-black tracking-tighter mb-2">${resolvedName}</h2>
+                            <p class="text-blue-200 font-bold text-xs md:text-sm uppercase tracking-widest opacity-80">Comprehensive Patient Education With APA 7 Citations</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 md:p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-grow">
+                        <div class="grid grid-cols-1 xl:grid-cols-[0.9fr_1.1fr] gap-6 md:gap-8">
+                            <div class="space-y-5">
+                                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.15em] mb-4">Clinical Protocol</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Diluent</p>
+                                            <p class="text-sm font-bold text-slate-800">${protocol.diluent || 'N/A'}</p>
+                                        </div>
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume</p>
+                                            <p class="text-sm font-bold text-slate-800">${protocol.volume || 'N/A'}</p>
+                                        </div>
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stability</p>
+                                            <p class="text-sm font-bold text-slate-800">${protocol.stability || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Administration Instructions</p>
+                                        <p class="text-sm font-semibold text-slate-700 leading-relaxed">${protocol.instructions}</p>
+                                    </div>
+                                </div>
+
+                                ${protocol.isHighAlert ? `
+                                    <div class="rounded-3xl border border-red-200 bg-red-50 p-5">
+                                        <p class="text-[10px] font-black text-red-700 uppercase tracking-widest mb-2">High-Alert Medication</p>
+                                        <p class="text-sm font-semibold text-red-900 leading-relaxed">This medicine requires extra caution and independent verification before administration.</p>
+                                    </div>
+                                ` : ''}
+
+                                ${protocol.isLASA ? `
+                                    <div class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                                        <p class="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">LASA Risk</p>
+                                        <p class="text-sm font-semibold text-amber-900 leading-relaxed">${protocol.lasaNote || 'Look-alike / sound-alike verification is required.'}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="space-y-5">
+                                ${sections.map(section => `
+                                    <section class="space-y-3">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-1.5 h-5 bg-${section.accent}-600 rounded-full"></div>
+                                            <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.15em]">${section.title}</h3>
+                                        </div>
+                                        ${renderEducationNotesList(section.notes, 'space-y-3')}
+                                    </section>
+                                `).join('')}
+
+                                <section class="rounded-3xl bg-slate-900 p-5 text-white">
+                                    <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References (APA 7th Ed.)</p>
+                                    <div class="space-y-2">
+                                        ${references.map(citation => `<p class="text-xs font-semibold text-slate-100 leading-relaxed">${citation}</p>`).join('')}
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 md:p-6 border-t border-slate-100 bg-white">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button onclick="printHEGuide('${resolvedName.replace(/'/g, "\\'")}')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-blue-700 transition-all active:scale-95 uppercase tracking-[0.15em]">Print Guide</button>
+                            <button onclick="this.closest('.fixed').remove()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-slate-800 transition-all active:scale-95 uppercase tracking-[0.15em]">Close Monograph</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
         function showFullDilutionProtocol() {
             const medName = document.getElementById('dilution-guideline-panel').dataset.activeMed;
             showMedInfo(medName);
@@ -1825,6 +1929,80 @@
 
                         <div class="mt-8 flex justify-center no-print">
                             <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all">Print This Guide</button>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        }
+
+        function printHEGuide(medName) {
+            const education = getMedicationEducationBundle(medName);
+            if (!education) {
+                showNotification(`No education guide available for ${medName}.`, 'error');
+                return;
+            }
+
+            const { protocol, resolvedName, sections, references } = education;
+            const printWindow = window.open('', '_blank');
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Patient Nursing Guide - ${resolvedName}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #0f172a; padding: 24px; }
+                        .sheet { max-width: 960px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); overflow: hidden; }
+                        .hero { background: linear-gradient(135deg, #1d4ed8, #312e81); color: white; padding: 32px; }
+                        .content { padding: 28px; }
+                        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+                        .meta { border: 1px solid #cbd5e1; border-radius: 16px; padding: 16px; background: #eff6ff; }
+                        .meta-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
+                        .meta-value { font-size: 13px; font-weight: 800; color: #0f172a; }
+                        .section { margin-bottom: 24px; }
+                        .section-title { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #1e3a8a; margin-bottom: 12px; }
+                        .card { border: 1px solid #e2e8f0; border-radius: 18px; padding: 16px; margin-bottom: 12px; background: #f8fafc; }
+                        .note { font-size: 14px; font-weight: 700; line-height: 1.6; color: #1e293b; margin: 0; }
+                        .cite { font-size: 11px; font-weight: 700; color: #64748b; line-height: 1.5; margin-top: 10px; }
+                        .refs { border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 24px; }
+                        .no-print { text-align: center; padding: 0 0 28px; }
+                        .btn { background: #1d4ed8; color: white; border: none; padding: 14px 28px; border-radius: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
+                        @media print { .no-print { display:none; } body { background: white; padding: 0; } .sheet { box-shadow:none; border-radius:0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="sheet">
+                        <div class="hero">
+                            <p style="margin:0; font-size:11px; font-weight:900; letter-spacing:0.2em; text-transform:uppercase; opacity:0.85;">Comprehensive Patient Education</p>
+                            <h1 style="margin:10px 0 0; font-size:34px; font-weight:900; letter-spacing:-0.03em;">${resolvedName}</h1>
+                        </div>
+                        <div class="content">
+                            <div class="grid">
+                                <div class="meta"><div class="meta-label">Diluent</div><div class="meta-value">${protocol.diluent || 'N/A'}</div></div>
+                                <div class="meta"><div class="meta-label">Volume</div><div class="meta-value">${protocol.volume || 'N/A'}</div></div>
+                                <div class="meta"><div class="meta-label">Stability</div><div class="meta-value">${protocol.stability || 'N/A'}</div></div>
+                            </div>
+                            ${sections.map(section => `
+                                <div class="section">
+                                    <div class="section-title">${section.title}</div>
+                                    ${section.notes.map(note => `
+                                        <div class="card">
+                                            <p class="note">${note.text}</p>
+                                            <p class="cite">APA 7: ${note.citation}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `).join('')}
+                            <div class="refs">
+                                <div class="section-title">Evidence-Based References (APA 7th Ed.)</div>
+                                ${references.map(citation => `<p class="cite" style="margin-top:0;">${citation}</p>`).join('')}
+                            </div>
+                        </div>
+                        <div class="no-print">
+                            <button onclick="window.print()" class="btn">Print Education Guide</button>
                         </div>
                     </div>
                 </body>
