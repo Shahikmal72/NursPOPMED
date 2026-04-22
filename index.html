@@ -643,17 +643,17 @@
             </section>
 
             <!-- Cabinet 1 Section -->
-            <section id="cabinet1-section" class="hidden">
-                <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section id="cabinet1-section" class="hidden h-full">
+                <div class="max-w-6xl mx-auto space-y-6 overflow-y-auto pb-8">
                     <!-- Patient Selection Panel -->
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                            <h2 class="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-lg border border-gray-100">
+                            <h2 class="text-lg md:text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                 Select Patient
                             </h2>
                             <div class="relative">
-                                <select id="cabinet1-patient-list" onchange="selectPatientForCabinet1(this.value)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none font-medium">
+                                <select id="cabinet1-patient-list" onchange="selectPatientForCabinet1(this.value)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-sm">
                                     <option value="">Select a Patient / Bed</option>
                                     <!-- Populated by JS -->
                                 </select>
@@ -662,12 +662,12 @@
                                 </div>
                             </div>
                             
-                            <div id="cabinet1-patient-summary" class="mt-6 hidden space-y-4 animate-fade-in">
-                                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <div id="cabinet1-patient-summary" class="mt-4 md:mt-6 hidden space-y-4 animate-fade-in">
+                                <div class="p-3 md:p-4 bg-blue-50 rounded-xl border border-blue-100">
                                     <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Diagnosis</p>
                                     <p id="cab1-diagnosis" class="text-sm font-bold text-blue-900 leading-tight"></p>
                                 </div>
-                                <div class="p-4 bg-green-50 rounded-xl border border-green-100">
+                                <div class="p-3 md:p-4 bg-green-50 rounded-xl border border-green-100">
                                     <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Clinical Progress</p>
                                     <p id="cab1-progress" class="text-xs font-medium text-green-800 leading-relaxed italic"></p>
                                 </div>
@@ -675,52 +675,56 @@
                         </div>
 
                         <!-- Available Medications List -->
-                        <div id="cabinet1-available-panel" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hidden">
-                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Available Medications</h3>
-                            <div id="cabinet1-available-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div id="cabinet1-available-panel" class="bg-white p-4 md:p-6 rounded-2xl shadow-lg border border-gray-100 hidden">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Available Medications</h3>
+                                <button onclick="handleBulkTransfer()" id="btn-bulk-transfer" class="hidden w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all animate-pulse">
+                                    Transfer Selected
+                                </button>
+                            </div>
+                            <div id="cabinet1-available-list" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
 
                         <!-- Medication Overview -->
-                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-lg border border-gray-100">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Medication Overview</h3>
                             </div>
-                            <div id="cabinet1-global-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div id="cabinet1-global-list" class="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
 
                     <!-- Processing Panel -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-full">
-                            <div class="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
-                                <div>
-                                    <h2 class="text-2xl font-extrabold text-blue-900 tracking-tight">ADC Unit 1: Medication Management</h2>
-                                    <p class="text-sm text-gray-500 font-medium italic">Authorized dispensing & clinical prescribing console</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="btn-new-prescription" type="button" onclick="togglePrescriptionView()" class="hidden bg-indigo-600 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
-                                        + New Prescription
-                                    </button>
-                                    <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Inventory Management</button>
-                                    <div class="bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
-                                        ADC UNIT 1
-                                    </div>
+                    <div class="bg-white p-4 md:p-8 rounded-2xl shadow-xl border border-gray-100">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-extrabold text-blue-900 tracking-tight">ADC Unit 1: Medication Management</h2>
+                                <p class="text-xs md:text-sm text-gray-500 font-medium italic">Authorized dispensing & clinical prescribing console</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="btn-new-prescription" type="button" onclick="togglePrescriptionView()" class="hidden bg-indigo-600 text-white px-4 md:px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                                    + New Prescription
+                                </button>
+                                <button type="button" onclick="showSection('inventory')" class="bg-gray-100 text-gray-700 px-3 md:px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">Inventory</button>
+                                <div class="bg-blue-600 text-white px-3 md:px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
+                                    ADC UNIT 1
                                 </div>
                             </div>
-                            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Clinical Instruction</p>
-                                <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
-                                    Select an order from the **Available Medications** list to initiate the automated dispensing sequence.
-                                </p>
-                            </div>
+                        </div>
+                        <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Clinical Instruction</p>
+                            <p class="text-[11px] text-blue-600 font-bold leading-relaxed">
+                                Select an order from the **Available Medications** list to initiate the automated dispensing sequence.
+                            </p>
+                        </div>
 
                                 <!-- NEW PRESCRIPTION FORM (Visible to Doctors) -->
                                 <div id="prescription-view" class="hidden animate-fade-in space-y-6">
-                                    <div class="p-6 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 relative overflow-hidden">
+                                    <div class="p-4 md:p-6 bg-indigo-50 rounded-2xl md:rounded-[2rem] border-2 border-indigo-100 relative overflow-hidden">
                                         <div class="flex justify-between items-center mb-6">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -851,7 +855,11 @@
                                         <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Time Due</label>
                                         <input type="datetime-local" id="order-time-due" class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all" required>
                                     </div>
-                                    <div class="flex items-end">
+                                    <div class="space-y-2 md:col-span-2">
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Dispensing Remarks (Optional)</label>
+                                        <textarea id="order-remarks" placeholder="Enter clinical remarks for dispensing..." class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold h-20 resize-none"></textarea>
+                                    </div>
+                                    <div class="flex items-end md:col-span-2">
                                         <button type="submit" class="w-full btn-premium text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-blue-900/20 transition-all">
                                             DISPENSE FROM ADC
                                         </button>
@@ -869,8 +877,8 @@
             </section>
 
             <!-- Cabinet 2 Section -->
-            <section id="cabinet2-section" class="hidden">
-                <div class="max-w-[1600px] mx-auto px-4">
+            <section id="cabinet2-section" class="hidden h-full overflow-y-auto pb-8">
+                <div class="max-w-[1600px] mx-auto px-4 py-4 space-y-6">
                     <div class="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-6 md:mb-8">
                         <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
                             <div>
@@ -887,8 +895,8 @@
             </section>
 
             <!-- Cabinet 3 Section -->
-            <section id="cabinet3-section" class="hidden">
-                <div class="max-w-4xl mx-auto">
+            <section id="cabinet3-section" class="hidden h-full overflow-y-auto pb-8">
+                <div class="max-w-4xl mx-auto py-4 px-4">
                     <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative">
                             <div class="flex flex-col md:flex-row items-center gap-6 mb-8">
@@ -956,8 +964,8 @@
             </section>
 
             <!-- Inventory Section -->
-            <section id="inventory-section" class="hidden">
-                <div class="max-w-7xl mx-auto">
+            <section id="inventory-section" class="hidden h-full overflow-y-auto pb-8">
+                <div class="max-w-7xl mx-auto py-4 px-4">
                     <div class="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden relative">
                         <div class="relative z-10">
                             <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-8 md:mb-12">
@@ -1032,8 +1040,8 @@
     </div>
 
     <!-- Patient Record Modal -->
-    <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto my-auto">
             <div class="sticky top-0 bg-blue-800 text-white p-4 flex justify-between items-center">
                 <div class="flex items-center gap-3">
                 <div class="bg-white p-1 rounded-lg shadow-sm">
@@ -1369,113 +1377,6 @@
             }
         }
 
-        function populateCabinet1Patients() {
-            const db = getDB();
-            const select = document.getElementById('cabinet1-patient-list');
-            const currentVal = select.value;
-            
-            select.innerHTML = '<option value="">Select a Patient / Bed</option>';
-            db.patients.filter(p => p.occupied).forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.bedNumber;
-                opt.innerText = `Bed ${p.bedNumber}: ${p.info.name}`;
-                select.appendChild(opt);
-            });
-            
-            if (currentVal) select.value = currentVal;
-
-            // Populate Global List
-            const globalList = document.getElementById('cabinet1-global-list');
-            globalList.innerHTML = '';
-            
-            db.patients.filter(p => p.occupied).forEach(p => {
-                p.medications.forEach(med => {
-                    if (med.status === 'Pending') {
-                        const div = document.createElement('div');
-                        div.className = 'p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center transition-all hover:border-blue-200 hover:bg-white cursor-pointer';
-                        div.onclick = () => {
-                            select.value = p.bedNumber;
-                            selectPatientForCabinet1(p.bedNumber);
-                            autoFillMedication(med);
-                        };
-                        
-                        div.innerHTML = `
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-2 mb-0.5">
-                                    <span class="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tighter">Bed ${p.bedNumber}</span>
-                                    <p class="text-xs font-bold text-slate-800">${med.name}</p>
-                                </div>
-                                <div class="flex justify-between items-center pr-2">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${p.info.name}</p>
-                                    <p class="text-[9px] text-blue-600 font-black tracking-tighter">${formatDateTime(med.timeDue).split(',')[1]}</p>
-                                </div>
-                            </div>
-                        `;
-                        globalList.appendChild(div);
-                    }
-                });
-            });
-
-            if (globalList.innerHTML === '') {
-                globalList.innerHTML = '<p class="text-center text-slate-300 italic text-[10px] py-10">No pending medications found.</p>';
-            }
-        }
-
-        function selectPatientForCabinet1(bedNumber) {
-            if (!bedNumber) {
-                document.getElementById('cabinet1-patient-summary').classList.add('hidden');
-                document.getElementById('cabinet1-available-panel').classList.add('hidden');
-                return;
-            }
-
-            const db = getDB();
-            const patient = db.patients.find(p => p.bedNumber === parseInt(bedNumber));
-            
-            if (patient) {
-                // Update summary
-                document.getElementById('cab1-diagnosis').innerText = patient.info.diagnosis;
-                document.getElementById('cab1-progress').innerText = patient.info.clinicalProgress;
-                document.getElementById('cabinet1-patient-summary').classList.remove('hidden');
-
-                // Update available list
-                const list = document.getElementById('cabinet1-available-list');
-                list.innerHTML = '';
-                
-                patient.medications.forEach(med => {
-                    const div = document.createElement('div');
-                    div.className = `p-3 rounded-xl border flex justify-between items-center transition-all group hover:bg-gray-50 ${med.status === 'Pending' ? 'border-yellow-200 bg-yellow-50/30' : 'border-gray-100 bg-gray-50/50 opacity-60'}`;
-                    
-                    div.innerHTML = `
-                        <div class="flex-grow cursor-pointer" onclick="autoFillMedication(${JSON.stringify(med).replace(/"/g, '&quot;')})">
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-bold text-gray-800">${med.name}</p>
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${med.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-600'}">${med.status}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <p class="text-[10px] text-gray-500 font-medium">${med.dose} • ${med.route} • ${med.frequency} • ${formatDateTime(med.timeDue).split(',')[1]}</p>
-                                ${med.status === 'Pending' && isStaffNurse() ? `
-                                    <button onclick="event.stopPropagation(); promptUpdateTime(${patient.bedNumber}, '${med.id}', '${med.timeDue}')" class="p-1 bg-white/50 rounded-lg hover:bg-white text-blue-600 transition-all opacity-0 group-hover:opacity-100" title="Adjust Time">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                        <button onclick="directTransferMedication(${JSON.stringify(med).replace(/"/g, '&quot;')})" class="p-2 bg-blue-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 active:scale-90" title="Automatic Transfer to Cabinet 2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-                        </button>
-                    `;
-                    list.appendChild(div);
-                });
-                
-                document.getElementById('cabinet1-available-panel').classList.remove('hidden');
-
-                // Auto-fill hidden inputs
-                document.getElementById('order-patient-name').value = patient.info.name;
-                document.getElementById('order-bed-number').value = patient.bedNumber;
-                document.getElementById('order-mrn').value = patient.info.mrn;
-            }
-        }
-
         function autoFillMedication(med) {
             if (med.status !== 'Pending') {
                 showNotification('This medication has already been processed.', 'info');
@@ -1541,7 +1442,8 @@
                 dose: med.dose,
                 route: med.route,
                 frequency: med.frequency,
-                timeDue: med.timeDue
+                timeDue: med.timeDue,
+                remarks: document.getElementById('order-remarks').value || 'Direct Transfer from Pending Orders'
             };
 
             // Trigger the Cabinet 1 simulation (Roller/Belt) and process automatically
@@ -2069,9 +1971,9 @@
         document.getElementById('cabinet1-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
-            // Role Check: Only Medical Doctors can prescribe
-            if (!isMedicalDoctor()) {
-                showNotification('Access Denied: Only Medical Doctors are authorized to prescribe medications.', 'error');
+            // Security: Allow Medical Staff (Doctor, Nurse, Pharmacist, Admin)
+            if (!isMedicalDoctor() && !isStaffNurse() && !isPharmacist() && currentUser.role !== 'Admin') {
+                showNotification('Access Denied: Unauthorized role for medication dispensing.', 'error');
                 return;
             }
 
@@ -2084,7 +1986,8 @@
                 dose: document.getElementById('order-dose').value,
                 route: document.getElementById('order-route').value,
                 frequency: document.getElementById('order-frequency').value,
-                timeDue: document.getElementById('order-time-due').value
+                timeDue: document.getElementById('order-time-due').value,
+                remarks: document.getElementById('order-remarks').value
             };
             
             if (!orderData.bedNumber) {

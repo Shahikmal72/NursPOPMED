@@ -27,15 +27,17 @@ function generateLog(action, nurseId, details) {
 function getMedicationStatus(med) {
     if (med.status === 'Administered' || med.status === 'Given') return 'Green';
     if (med.status === 'Missed') return 'Red';
-    if (med.status === 'Dispensed') return 'Yellow';
     
-    // Check for missed dose based on due time
     const now = new Date();
     const due = new Date(med.timeDue);
-    if (now > due && med.status === 'Pending') {
+    
+    // Check for missed dose based on due time
+    if (now > due && (med.status === 'Pending' || med.status === 'Dispensed')) {
         return 'Red';
     }
-    return 'Yellow';
+    
+    if (med.status === 'Dispensed') return 'Yellow';
+    return 'Yellow'; // Default for Pending
 }
 
 function checkAlerts() {
@@ -401,6 +403,25 @@ function showHEModal(patient, med) {
                 </div>
             </section>
 
+            ${info.interventions ? `
+            <section class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-4 bg-green-600 rounded-full"></div>
+                    <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Health Education Interventions</h4>
+                </div>
+                <div class="bg-green-50/50 p-5 rounded-3xl border border-green-100">
+                    <ul class="space-y-2">
+                        ${info.interventions.map(point => `
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 shrink-0"></div>
+                                <p class="text-xs font-bold text-green-900/80 leading-relaxed">${point}</p>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </section>
+            ` : ''}
+
             <section class="space-y-3">
                 <div class="flex items-center gap-2">
                     <div class="w-1.5 h-4 bg-indigo-600 rounded-full"></div>
@@ -456,7 +477,8 @@ function showHEModal(patient, med) {
                     ${generateNurseStamp(currentUser.fullname, currentUser.role)}
                 </div>
                 <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-4">
-                    Source: ${info.citation || 'Standard Nursing Guidelines'}
+                    Evidence-Based Reference (APA 7th Ed.):<br>
+                    ${info.citation || 'Standard Nursing Guidelines'}
                 </p>
             </div>
         </div>
@@ -472,6 +494,159 @@ function showHEModal(patient, med) {
     `;
     
     document.body.appendChild(modal);
+}
+
+/**
+ * Professional Clinical Prescription History Generator
+ * Purpose: Reference to new clinic, discharge purpose, or pharmacy history
+ */
+function generatePrescriptionPrint(patient) {
+    const db = getDB();
+    const now = new Date();
+    
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Prescription History: ${patient.info.name}</title>
+            <style>
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.4; color: #0f172a; margin: 0; padding: 20px; background: #fff; }
+                .print-container { max-width: 900px; margin: auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 8px; }
+                
+                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
+                .hospital-info h1 { font-size: 24px; font-weight: 900; color: #1e3a8a; margin: 0; text-transform: uppercase; }
+                .hospital-info p { font-size: 10px; font-weight: 800; color: #64748b; margin: 5px 0 0 0; text-transform: uppercase; letter-spacing: 0.2em; }
+                .report-title { text-align: right; }
+                .report-title h2 { font-size: 18px; font-weight: 900; color: #0f172a; margin: 0; text-transform: uppercase; }
+                .report-title p { font-size: 10px; font-weight: 700; color: #94a3b8; margin: 5px 0 0 0; }
+
+                .patient-summary { background: #f8fafc; border-radius: 12px; padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+                .summary-item .label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+                .summary-item .value { font-size: 13px; font-weight: 700; color: #1e293b; }
+
+                .med-table { w-full; border-collapse: collapse; margin-bottom: 30px; }
+                .med-table th { background: #f1f5f9; text-align: left; padding: 12px 15px; font-size: 10px; font-weight: 900; color: #475569; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+                .med-table td { padding: 12px 15px; font-size: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+                .med-name { font-weight: 800; color: #0f172a; }
+                .med-details { font-size: 10px; color: #64748b; font-weight: 600; margin-top: 2px; }
+                .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+                .status-given { background: #dcfce7; color: #166534; }
+                .status-pending { background: #fef9c3; color: #854d0e; }
+                .status-missed { background: #fee2e2; color: #991b1b; }
+
+                .footer { margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .signature-box { border-top: 1px solid #0f172a; width: 200px; text-align: center; padding-top: 8px; }
+                .signature-box p { font-size: 10px; font-weight: 700; color: #64748b; margin: 0; }
+                
+                .no-print { text-align: center; margin-top: 30px; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
+                .print-btn:hover { background: #1e40af; }
+
+                @media print { .no-print { display: none; } .print-container { border: none; padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                <div class="header">
+                    <div class="hospital-info">
+                        <h1>Kulliyyah of Nursing • IIUM</h1>
+                        <p>Advanced Clinical Informatics System</p>
+                    </div>
+                    <div class="report-title">
+                        <h2>Prescription History</h2>
+                        <p>Generated: ${formatDateTime(now)}</p>
+                    </div>
+                </div>
+
+                <div class="patient-summary">
+                    <div class="summary-item">
+                        <div class="label">Patient Name</div>
+                        <div class="value">${patient.info.name}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Registration No (MRN)</div>
+                        <div class="value">${patient.info.mrn}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Primary Diagnosis</div>
+                        <div class="value">${patient.info.diagnosis}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Attending Doctor</div>
+                        <div class="value">${patient.info.doctor}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Allergies</div>
+                        <div class="value" style="color: ${patient.info.allergies !== 'None (NKDA)' ? '#dc2626' : 'inherit'}">${patient.info.allergies}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Clinical Status</div>
+                        <div class="value">Discharged / Referral Reference</div>
+                    </div>
+                </div>
+
+                <table class="med-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Medication Agent</th>
+                            <th>Dose / Route</th>
+                            <th>Frequency</th>
+                            <th>Last Administered</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${patient.medications.map(med => `
+                            <tr>
+                                <td>
+                                    <div class="med-name">${med.name}</div>
+                                    <div class="med-details">ID: ${med.id.split('-').pop()}</div>
+                                </td>
+                                <td>${med.dose}<br><span style="font-size: 10px; color: #94a3b8;">${med.route}</span></td>
+                                <td>${med.frequency}</td>
+                                <td>${med.timeAdministered ? formatDateTime(med.timeAdministered) : '---'}</td>
+                                <td>
+                                    <span class="status-badge ${
+                                        med.status === 'Given' || med.status === 'Administered' ? 'status-given' : 
+                                        med.status === 'Missed' ? 'status-missed' : 'status-pending'
+                                    }">${med.status}</span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="section" style="margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                    <p style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 10px;">Clinical Remarks / Discharge Instructions</p>
+                    <div style="font-size: 12px; color: #334155; line-height: 1.6; background: #fff; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 8px;">
+                        Patient instructed on medication adherence and follow-up clinical appointments. In case of allergic reaction or worsening symptoms, please seek immediate medical attention at the nearest healthcare facility.
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="signature-box">
+                        <p style="margin-bottom: 40px; border: none;">Digital Stamp Attached</p>
+                        ${generateNurseStamp(currentUser.fullname, currentUser.role)}
+                        <p style="margin-top: 10px;">Authorized Signature</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">POPMED-CLINICAL-RECORD-026</p>
+                        <p style="font-size: 8px; color: #cbd5e1;">This is a computer-generated clinical record and does not require a physical signature if the digital stamp is present.</p>
+                    </div>
+                </div>
+
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">🖨️ Print Clinical Prescription History</button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const w = window.open('', '', 'width=950,height=900');
+    w.document.write(content);
+    w.document.close();
 }
 
 /**
@@ -723,7 +898,123 @@ window.showClinicalSafetyAlert = function(medName, type, details, onConfirm) {
     };
 }
 
-// Advanced Inventory Search Utility (FIFO - First Expire First Out)
+/**
+ * Professional Patient Education (HE) Summary Generator
+ */
+function generateAllHEPrint(patient) {
+    const db = getDB();
+    const now = new Date();
+    
+    const medEducationContent = patient.medications.map(med => {
+        const medNameKey = Object.keys(db.medicationProtocols).find(key => 
+            med.name.toLowerCase().includes(key.toLowerCase()) || 
+            key.toLowerCase().includes(med.name.toLowerCase())
+        );
+        
+        const protocol = db.medicationProtocols[medNameKey];
+        const info = (protocol && protocol.he) ? protocol.he : {
+            reason: "This medication is prescribed for your current clinical condition.",
+            sideEffects: "Varies; please consult your nurse.",
+            citation: "Clinical Guidelines"
+        };
+
+        return `
+            <div class="med-he-block" style="break-inside: avoid; margin-bottom: 40px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="font-size: 20px; font-weight: 900; color: #1e3a8a; margin: 0;">${med.name}</h3>
+                    <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">${med.dose} • ${med.route}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <p style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; margin: 0 0 5px 0;">Why am I taking this?</p>
+                    <p style="font-size: 14px; font-weight: 600; color: #334155; margin: 0; line-height: 1.5;">${info.reason}</p>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <p style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; margin: 0 0 5px 0;">What should I watch for?</p>
+                    <p style="font-size: 13px; font-weight: 500; color: #475569; margin: 0; line-height: 1.5;">${Array.isArray(info.sideEffects) ? info.sideEffects.join(', ') : info.sideEffects}</p>
+                </div>
+
+                ${protocol && protocol.highAlert ? `
+                    <div style="background: #fff1f2; border: 1px solid #fda4af; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 700; color: #be123c;">
+                        ⚠️ HIGH-ALERT MEDICATION: Use with caution. Do not skip or double doses.
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Patient Education Summary: ${patient.info.name}</title>
+            <style>
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.4; color: #0f172a; margin: 0; padding: 20px; background: #fff; }
+                .print-container { max-width: 900px; margin: auto; }
+                
+                .header { border-bottom: 4px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 40px; text-align: center; }
+                .hospital-name { font-size: 28px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
+                .subtitle { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3em; margin-top: 5px; }
+
+                .patient-info { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 40px; display: flex; justify-content: space-between; }
+                .info-item .label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+                .info-item .value { font-size: 14px; font-weight: 700; color: #1e293b; }
+
+                .no-print { text-align: center; margin-top: 40px; }
+                .print-btn { background: #1e3a8a; color: white; border: none; padding: 15px 40px; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                <div class="header">
+                    <p class="hospital-name">Kulliyyah of Nursing • IIUM</p>
+                    <p class="subtitle">Patient Health Education Guide</p>
+                </div>
+
+                <div class="patient-info">
+                    <div class="info-item">
+                        <div class="label">Patient Name</div>
+                        <div class="value">${patient.info.name}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">MRN / RN</div>
+                        <div class="value">${patient.info.mrn}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Date Generated</div>
+                        <div class="value">${new Date().toLocaleDateString()}</div>
+                    </div>
+                </div>
+
+                <div class="education-content">
+                    ${medEducationContent}
+                </div>
+
+                <div style="margin-top: 50px; text-align: center;">
+                    <p style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Innovation in Nursing • POPMED Clinical Informatics</p>
+                    <p style="font-size: 9px; color: #cbd5e1; margin-top: 5px;">This document is for educational purposes only. Always follow your healthcare provider's instructions.</p>
+                </div>
+
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">🖨️ Print Education Guide</button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const w = window.open('', '', 'width=950,height=900');
+    w.document.write(content);
+    w.document.close();
+}
+
+/**
+ * Advanced Inventory Search Utility (FIFO - First Expire First Out)
+ */
 function findInventoryItem(db, medName) {
     if (!medName) return null;
     

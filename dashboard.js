@@ -2,6 +2,29 @@
 let currentBCMAPatient = null;
 
 function updateDashboard() {
+    const db = getDB();
+    
+    // Data Migration: Ensure all doctors have "Dr." title
+    let dbChanged = false;
+    db.patients.forEach(p => {
+        if (p.occupied && p.info.doctor && !p.info.doctor.startsWith('Dr.')) {
+            p.info.doctor = 'Dr. ' + p.info.doctor;
+            dbChanged = true;
+        }
+        if (p.occupied && p.medications) {
+            p.medications.forEach(m => {
+                if (m.prescribingDoctor && !m.prescribingDoctor.startsWith('Dr.')) {
+                    m.prescribingDoctor = 'Dr. ' + m.prescribingDoctor;
+                    dbChanged = true;
+                }
+            });
+        }
+    });
+    
+    if (dbChanged) {
+        updateDB(db);
+    }
+
     if (document.getElementById('cabinet2-section') && !document.getElementById('cabinet2-section').classList.contains('hidden')) {
         renderCabinet2();
     }
@@ -95,30 +118,46 @@ function openPatientBCMAModal(bedNumber) {
     modal.id = 'bcma-workflow-modal';
     modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[400] flex items-center justify-center p-4';
     
-    const medicationsDue = patient.medications.filter(m => m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Given' || m.status === 'Administered' || m.status === 'Missed');
+    const medicationsDue = patient.medications.filter(m => 
+        m.status === 'Pending' || 
+        m.status === 'Dispensed' || 
+        m.status === 'Given' || 
+        m.status === 'Administered' || 
+        m.status === 'Missed'
+    );
     
     modal.innerHTML = `
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20 max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-pop-in border border-white/20 max-h-[95vh] flex flex-col">
             <!-- Header -->
-            <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-8 text-white relative shrink-0">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-300 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+            <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-4 md:p-8 text-white relative shrink-0">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 md:px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-300 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
                                 <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                 Patient Identity Verified
                             </span>
                         </div>
-                        <h2 class="text-3xl font-black tracking-tighter">${patient.info.name}</h2>
-                        <p class="text-blue-200 font-bold uppercase tracking-widest text-xs mt-1">Bed ${bedNumber} • ${patient.info.mrn} • Allergy: <span class="text-red-300">${patient.info.allergies}</span></p>
+                        <h2 class="text-xl md:text-3xl font-black tracking-tighter">${patient.info.name}</h2>
+                        <p class="text-blue-200 font-bold uppercase tracking-widest text-[10px] md:text-xs mt-1">Bed ${bedNumber} • ${patient.info.mrn} • Allergy: <span class="text-red-300">${patient.info.allergies}</span></p>
                     </div>
-                    <button onclick="this.closest('#bcma-workflow-modal').remove()" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="generatePrescriptionPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-white/10 hover:bg-white/20 text-white px-3 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            Print History
+                        </button>
+                        <button onclick="generateAllHEPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-white/10 hover:bg-white/20 text-white px-3 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                            Print HE Notes
+                        </button>
+                        <button onclick="this.closest('#bcma-workflow-modal').remove()" class="p-2 md:p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="p-8 overflow-y-auto">
+            <div class="p-4 md:p-8 overflow-y-auto custom-scrollbar flex-grow">
                 <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Medications Due for Administration</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -138,11 +177,16 @@ function openPatientBCMAModal(bedNumber) {
                             <div class="p-6 rounded-3xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-xl transition-all group">
                                 <div class="flex justify-between items-start mb-4">
                                     <div>
-                                        <p class="text-xl font-black text-slate-900">${med.name}</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-xl font-black text-slate-900">${med.name}</p>
+                                            <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors text-blue-600" title="Health Education Info">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </button>
+                                        </div>
                                         <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-1">${med.dose} • ${med.route} • ${med.frequency}</p>
                                         <div class="mt-2 flex items-center gap-2">
                                             <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered By:</p>
-                                            <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
+                                            <p class="text-[10px] font-black text-blue-800">${(med.prescribingDoctor || patient.info.doctor).startsWith('Dr.') ? '' : 'Dr. '}${med.prescribingDoctor || patient.info.doctor}</p>
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
@@ -184,7 +228,10 @@ function openPatientBCMAModal(bedNumber) {
                                     </div>
                                     ${isGiven ? `
                                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[9px] font-bold text-slate-500">
-                                            <span class="uppercase tracking-widest text-[8px] opacity-60">Legal Record:</span> Administered at ${formatDateTime(med.timeAdministered)}
+                                            <div class="flex flex-col gap-1">
+                                                <div><span class="uppercase tracking-widest text-[8px] opacity-60">Legal Record:</span> Administered at ${formatDateTime(med.timeAdministered)}</div>
+                                                ${med.remarks ? `<div><span class="uppercase tracking-widest text-[8px] opacity-60">Remarks:</span> ${med.remarks}</div>` : ''}
+                                            </div>
                                         </div>
                                     ` : isMissed ? `
                                         <div class="bg-red-50 p-3 rounded-xl border border-red-100 text-[9px] font-bold text-red-500">
@@ -192,6 +239,13 @@ function openPatientBCMAModal(bedNumber) {
                                                 <div><span class="uppercase tracking-widest text-[8px] opacity-60">Justification:</span> ${med.justification}</div>
                                                 ${med.remarks ? `<div><span class="uppercase tracking-widest text-[8px] opacity-60">Remarks:</span> ${med.remarks}</div>` : ''}
                                                 <div class="text-[8px] opacity-40 mt-1 italic">Recorded at ${formatDateTime(med.timeAdministered)}</div>
+                                            </div>
+                                        </div>
+                                    ` : med.status === 'Dispensed' ? `
+                                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-[9px] font-bold text-blue-500">
+                                            <div class="flex flex-col gap-1">
+                                                <div><span class="uppercase tracking-widest text-[8px] opacity-60">Dispensed:</span> ${formatDateTime(med.timeDispensed)}</div>
+                                                ${med.dispensingRemarks ? `<div><span class="uppercase tracking-widest text-[8px] opacity-60">Remarks:</span> ${med.dispensingRemarks}</div>` : ''}
                                             </div>
                                         </div>
                                     ` : ''}
@@ -222,20 +276,64 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
         return;
     }
 
-    // Security Verification: Ensure the user is authorized for Medication Administration
+    // Security Verification
     if (!isAuthorizedForAction('MED_ADMINISTRATION')) {
         showNotification('SECURITY DENIED: Your role is not authorized for medication administration.', 'error');
         generateLog('SECURITY_VIOLATION', currentUser.id, `Unauthorized admin attempt for ${medication.name} (Bed ${bedNumber})`);
         return;
     }
 
+    // Show Administration Modal with Remarks
+    const modal = document.createElement('div');
+    modal.id = 'admin-remarks-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[600] flex items-center justify-center p-4 overflow-y-auto';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-pop-in border-4 border-blue-500/20 my-auto">
+            <div class="bg-blue-600 p-4 md:p-8 text-white text-center">
+                <div class="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                    <svg class="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h2 class="text-xl md:text-2xl font-black uppercase tracking-tighter">Medication Administration</h2>
+                <p class="text-blue-100 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-1">Final Verification & Remarks</p>
+            </div>
+            
+            <div class="p-4 md:p-8 space-y-4 md:space-y-6 overflow-y-auto max-h-[60vh]">
+                <div class="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Medication</p>
+                    <p class="text-base md:text-lg font-black text-slate-900">${medication.name}</p>
+                    <p class="text-[10px] md:text-xs font-bold text-blue-600 uppercase">${medication.dose} • ${medication.route}</p>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Remarks (Optional):</p>
+                    <textarea id="admin-remarks-input" placeholder="Enter administration notes..." class="w-full p-3 md:p-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 focus:bg-white outline-none text-sm font-bold text-slate-700 h-24 md:h-28 resize-none bg-slate-50 transition-all"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button onclick="finalizeAdministration(${bedNumber}, '${medId}')" class="w-full py-3 md:py-4 bg-blue-600 text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest shadow-lg shadow-blue-900/20 hover:bg-blue-700 active:scale-95 transition-all">Confirm Administration</button>
+                    <button onclick="document.getElementById('admin-remarks-modal').remove()" class="w-full py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+window.finalizeAdministration = function(bedNumber, medId) {
+    const db = getDB();
+    const patient = db.patients.find(p => p.bedNumber === bedNumber);
+    const medication = patient.medications.find(m => m.id === medId);
+    const remarks = document.getElementById('admin-remarks-input').value;
+
     // SIMPLIFIED WORKFLOW: Internal 5 Rights Verification (No manual scan)
     const verification = validate5Rights(patient, medication, patient.info.mrn, medication.barcode || '');
 
-    // Allergy check and critical stops are still enforced
     if (verification.criticalStop) {
         showNotification(`SAFETY ALERT: ${verification.drug.message || verification.patient.message}`, 'error');
         generateLog('CLINICAL_STOP', currentUser.id, `SAFETY ALERT: ${verification.drug.message || verification.patient.message} (Bed: ${bedNumber}, Drug: ${medication.name})`);
+        document.getElementById('admin-remarks-modal').remove();
         return;
     }
 
@@ -246,13 +344,16 @@ window.handleOneClickAdminister = function(bedNumber, medId) {
         const details = protocol.isLASA ? protocol.lasaNote : 'HIGH ALERT: Second independent verification of dosage and pump settings mandatory.';
         
         showClinicalSafetyAlert(medication.name, type, details, () => {
+            medication.remarks = remarks; // Store remarks
             processAdministration(db, medication, bedNumber);
+            document.getElementById('admin-remarks-modal').remove();
         });
         return;
     }
 
-    // Standard Administration
+    medication.remarks = remarks; // Store remarks
     processAdministration(db, medication, bedNumber);
+    document.getElementById('admin-remarks-modal').remove();
 };
 
 window.handleShowMissedJustification = function(bedNumber, medId) {
@@ -262,52 +363,108 @@ window.handleShowMissedJustification = function(bedNumber, medId) {
 
     const modal = document.createElement('div');
     modal.id = 'missed-justification-modal';
-    modal.className = 'fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[500] flex items-center justify-center p-4';
+    modal.className = 'fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[600] flex items-center justify-center p-4';
     
     modal.innerHTML = `
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-pop-in border border-slate-200">
-            <div class="bg-red-600 p-6 text-white text-center">
-                <h2 class="text-xl font-black uppercase tracking-tighter">Missed Dose Justification</h2>
-                <p class="text-red-100 text-[10px] font-bold uppercase tracking-widest mt-1">Legal Documentation Required</p>
+        <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-xl overflow-hidden animate-pop-in border-4 border-red-500/20 flex flex-col max-h-[95vh]">
+            <!-- Header -->
+            <div class="bg-red-600 p-8 text-white text-center shrink-0">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-black uppercase tracking-tighter">Missed Dose Documentation</h2>
+                <p class="text-red-100 text-[10px] font-bold uppercase tracking-widest mt-1">Legal MAR Justification Required</p>
             </div>
             
-            <div class="p-8 space-y-6">
-                <div>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Medication</p>
-                    <p class="text-lg font-black text-slate-900">${medication.name}</p>
+            <div class="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-grow">
+                <!-- Med Info -->
+                <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Medication to Omit</p>
+                    <p class="text-xl font-black text-slate-900">${medication.name}</p>
+                    <p class="text-[11px] font-bold text-blue-600 mt-1 uppercase">${medication.dose} • Scheduled: ${formatDateTime(medication.timeDue)}</p>
                 </div>
                 
-                <div class="space-y-3">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Reason (MAR Standards):</p>
-                    
-                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Patient refused medication')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
-                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Patient refused medication</p>
-                    </button>
-                    
-                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Patient in Operating Theatre (OT)')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
-                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Patient in Operating Theatre (OT)</p>
-                    </button>
-                    
-                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Doctor ordered to omit')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
-                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Doctor ordered to omit</p>
-                    </button>
-
-                    <button onclick="handleMissedSubmission(${bedNumber}, '${medId}', 'Given But Late')" class="w-full p-4 rounded-2xl border border-slate-200 hover:border-red-500 hover:bg-red-50 text-left transition-all group">
-                        <p class="text-sm font-black text-slate-700 group-hover:text-red-700">Given But Late</p>
-                    </button>
+                <!-- Reason Selection -->
+                <div class="space-y-4">
+                    <p class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-[10px]">1</span>
+                        Select Clinical Reason
+                    </p>
+                    <div class="grid grid-cols-1 gap-3">
+                        ${['Patient refused medication', 'Patient in Operating Theatre (OT)', 'Doctor ordered to omit', 'Given But Late'].map(reason => `
+                            <button onclick="selectMissedReason(this, '${reason}')" class="missed-reason-btn w-full p-5 rounded-2xl border-2 border-slate-100 hover:border-red-200 hover:bg-red-50 text-left transition-all group flex items-center justify-between">
+                                <span class="text-sm font-black text-slate-700 group-hover:text-red-700">${reason}</span>
+                                <div class="w-5 h-5 rounded-full border-2 border-slate-200 group-hover:border-red-400"></div>
+                            </button>
+                        `).join('')}
+                    </div>
                 </div>
 
-                <div class="space-y-2">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Additional Remarks (Optional):</p>
-                    <textarea id="missed-remarks-input" placeholder="Enter clinical remarks here..." class="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700 h-24 resize-none"></textarea>
+                <!-- Remarks Box (The "Box" requested) -->
+                <div class="space-y-4 pt-4 border-t border-slate-100">
+                    <p class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px]">2</span>
+                        Additional Clinical Remarks
+                    </p>
+                    <div class="relative group">
+                        <textarea id="missed-remarks-input" 
+                            placeholder="Enter detailed clinical notes here (e.g., patient condition, vital signs, or specific instructions)..." 
+                            class="w-full p-6 rounded-[2rem] border-4 border-slate-100 focus:border-blue-500 focus:bg-white outline-none text-sm font-bold text-slate-700 h-40 resize-none bg-slate-50 transition-all shadow-inner"
+                        ></textarea>
+                        <div class="absolute bottom-4 right-6 text-[10px] font-black text-slate-300 uppercase tracking-widest group-focus-within:text-blue-400">Clinical Record Entry</div>
+                    </div>
                 </div>
-                
-                <button onclick="document.getElementById('missed-justification-modal').remove()" class="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-8 bg-slate-50 border-t border-slate-100 shrink-0 space-y-4">
+                <button id="submit-missed-btn" disabled onclick="handleMissedSubmission(${bedNumber}, '${medId}')" 
+                    class="w-full py-5 bg-slate-200 text-slate-400 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] transition-all cursor-not-allowed shadow-xl">
+                    Finalize Documentation
+                </button>
+                <button onclick="document.getElementById('missed-justification-modal').remove()" 
+                    class="w-full py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-600 transition-colors">
+                    Cancel & Return to eMAR
+                </button>
             </div>
         </div>
+
+        <style>
+            .missed-reason-btn.selected {
+                border-color: #ef4444 !important;
+                background-color: #fef2f2 !important;
+            }
+            .missed-reason-btn.selected div {
+                background-color: #ef4444 !important;
+                border-color: #ef4444 !important;
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+            }
+            .missed-reason-btn.selected span {
+                color: #b91c1c !important;
+            }
+        </style>
     `;
     
     document.body.appendChild(modal);
+    
+    // Internal Helper for Selection
+    let selectedReason = null;
+    window.selectMissedReason = function(btn, reason) {
+        document.querySelectorAll('.missed-reason-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedReason = reason;
+        
+        const submitBtn = document.getElementById('submit-missed-btn');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+        submitBtn.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700', 'shadow-red-900/20');
+    };
+
+    window.handleMissedSubmission = function(bedNumber, medId) {
+        if (!selectedReason) return;
+        const remarks = document.getElementById('missed-remarks-input').value;
+        submitMissedJustification(bedNumber, medId, selectedReason, remarks);
+    };
 };
 
 window.handleMissedSubmission = function(bedNumber, medId, reason) {
@@ -372,7 +529,7 @@ function processAdministration(db, medication, bedNumber) {
             administeredBy: currentUser.fullname,
             role: currentUser.role,
             status: "Given",
-            remarks: "BCMA Verified Simplified Workflow"
+            remarks: medication.remarks || "BCMA Verified Simplified Workflow"
         };
 
         medication.status = 'Given';
@@ -489,342 +646,234 @@ function renderCabinet2() {
 
     const occupiedPatients = db.patients.filter(p => p.occupied);
     
-    // Ensure currentBCMAPatient is still occupied and valid
-    if (currentBCMAPatient) {
-        const stillValid = occupiedPatients.find(p => p.info.mrn === currentBCMAPatient.info.mrn);
-        if (!stillValid) currentBCMAPatient = null;
+    if (occupiedPatients.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 opacity-50">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 uppercase tracking-tighter">No Active Admissions</h3>
+                <p class="text-sm font-bold text-slate-400 mt-2">All beds are currently vacant in this unit.</p>
+                <button onclick="hardResetDB()" class="mt-6 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20">System Restore & Initialize Patients</button>
+            </div>
+        `;
+        return;
     }
 
     // Auto-select first patient if none selected
-    if (!currentBCMAPatient && occupiedPatients.length > 0) {
+    if (!currentBCMAPatient) {
         currentBCMAPatient = occupiedPatients[0];
+    } else {
+        // Ensure current selection is still valid and has fresh data
+        const freshData = occupiedPatients.find(p => p.info.mrn === currentBCMAPatient.info.mrn);
+        if (freshData) currentBCMAPatient = freshData;
+        else currentBCMAPatient = occupiedPatients[0];
     }
 
-    // 1. High-End Patient Switcher (Clinical Tabs)
-    let patientPillsHtml = `
-        <div class="flex items-center gap-3 overflow-x-auto pb-6 no-scrollbar mb-2 px-1">
-            <div class="flex bg-slate-200/50 p-1 rounded-2xl backdrop-blur-md border border-slate-200">
-                ${occupiedPatients.map(p => `
-                    <button onclick="selectPatientForBCMA('${p.info.mrn}')" 
-                    class="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${
-                        currentBCMAPatient && currentBCMAPatient.info.mrn === p.info.mrn 
-                        ? 'bg-white text-blue-600 shadow-xl shadow-blue-500/10' 
-                        : 'text-slate-500 hover:text-slate-800'
-                    }">
-                        Bed ${p.bedNumber}
-                    </button>
-                `).join('')}
+    // Master Split-Pane Container (Single Screen Focus)
+    container.className = "h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-4 overflow-hidden"; 
+    
+    // 1. LEFT SIDEBAR: Compact Bed List (Fixed width on desktop, Horizontal on mobile)
+    let sidebarHtml = `
+        <div class="w-full lg:w-72 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar pr-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0">
+            <div class="hidden lg:flex px-4 py-3 bg-slate-900 text-white rounded-2xl items-center justify-between shadow-lg mb-2">
+                <span class="text-[10px] font-black uppercase tracking-widest">Bed Unit</span>
+                <span class="px-2 py-0.5 bg-blue-500 rounded text-[9px] font-bold">${occupiedPatients.length} Active</span>
             </div>
-            <div class="h-6 w-[1px] bg-slate-300 mx-2"></div>
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Active Admissions: ${occupiedPatients.length}</p>
+            ${occupiedPatients.map(p => {
+                const isSelected = currentBCMAPatient && currentBCMAPatient.info.mrn === p.info.mrn;
+                const overdueCount = p.medications.filter(m => (m.status === 'Pending' || m.status === 'Dispensed') && new Date(m.timeDue) < new Date()).length;
+                
+                return `
+                    <button onclick="selectPatientForBCMA('${p.info.mrn}')" 
+                        class="p-4 rounded-2xl text-left transition-all relative border-2 shrink-0 lg:shrink-1 w-48 lg:w-full ${
+                            isSelected 
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20 scale-[1.02] z-10' 
+                            : 'bg-white border-slate-100 text-slate-600 hover:border-blue-300 hover:bg-blue-50/50'
+                        }">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-black uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}">Bed ${p.bedNumber}</span>
+                            ${overdueCount > 0 ? `<span class="px-1.5 py-0.5 bg-red-500 text-white rounded text-[8px] font-black animate-pulse">${overdueCount} DUE</span>` : ''}
+                        </div>
+                        <p class="text-sm font-black tracking-tight truncate">${p.info.name}</p>
+                        <p class="text-[9px] font-bold uppercase ${isSelected ? 'text-blue-200' : 'text-blue-600'} mt-1 truncate">${p.info.mrn}</p>
+                    </button>
+                `;
+            }).join('')}
         </div>
     `;
 
-    // 2. Main Clinical Command Center Area
-    let mainContentHtml = '';
-    if (currentBCMAPatient) {
-        // Always fetch fresh data from DB
-        const patient = db.patients.find(p => p.info.mrn === currentBCMAPatient.info.mrn);
-        const medications = patient.medications;
-        const alerts = getClinicalAlerts(patient);
-
-        // Clinical progress steps (Sync with openPatientModal)
-        const progressSteps = [
-            { label: 'Admission', status: 'completed', date: 'Day 1' },
-            { label: 'Stabilization', status: 'completed', date: 'Day 2' },
-            { label: 'Treatment Plan', status: 'in_progress', date: 'Ongoing' },
-            { label: 'Rehabilitation', status: 'pending', date: 'Planned' },
-            { label: 'Discharge Plan', status: 'pending', date: 'Pending' }
-        ];
-        
-        mainContentHtml = `
-            <div class="desktop-grid">
-                
-                <!-- LEFT: PATIENT CLINICAL DOSSIER (Sync with Profile View) -->
-                <div class="col-span-12 lg:col-span-3 space-y-6">
-                    <!-- Profile Card -->
-                    <div class="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden">
-                        <div class="flex items-center gap-4 mb-6">
-                            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/20">
-                                ${patient.bedNumber}
-                            </div>
-                            <div>
-                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">ID: ${patient.info.mrn}</p>
-                                <h3 class="text-lg font-black text-slate-900 tracking-tighter leading-tight">${patient.info.name}</h3>
-                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">${patient.info.doctor}</p>
-                            </div>
-                        </div>
-
-                        <div class="space-y-4 pt-6 border-t border-slate-100">
-                            <div>
-                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Primary Diagnosis</p>
-                                <p class="text-[11px] font-bold text-slate-700 leading-tight">${patient.info.diagnosis || 'Pending'}</p>
-                            </div>
-                            <div class="p-4 rounded-2xl ${patient.info.allergies && patient.info.allergies !== 'None (NKDA)' ? 'bg-red-50 border border-red-100' : 'bg-green-50 border border-green-100'}">
-                                <p class="text-[9px] font-black ${patient.info.allergies && patient.info.allergies !== 'None (NKDA)' ? 'text-red-600' : 'text-green-600'} uppercase tracking-widest mb-1">Allergies</p>
-                                <p class="text-xs font-black ${patient.info.allergies && patient.info.allergies !== 'None (NKDA)' ? 'text-red-900' : 'text-green-900'}">
-                                    ${patient.info.allergies || 'NKDA'}
-                                </p>
-                            </div>
-                        </div>
+    // 2. MAIN AREA: Patient eMAR & Details (Flex-grow, Internal scroll)
+    const patient = currentBCMAPatient;
+    const medications = patient.medications;
+    const dispensedMeds = medications.filter(m => m.status === 'Dispensed');
+    
+    let mainContentHtml = `
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden">
+            <!-- Top Clinical Header (Details at a glance) -->
+            <div class="bg-white rounded-3xl p-6 border-2 border-slate-100 shadow-xl flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-500/20">
+                        ${patient.bedNumber}
                     </div>
-
-                    <!-- Clinical Progress Tracker -->
-                    <div class="glass-panel p-6 rounded-[2.5rem]">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Care Pathway</h3>
-                        <div class="relative flex justify-between items-start px-2">
-                            <div class="absolute top-3 left-0 w-full h-0.5 bg-slate-100"></div>
-                            ${progressSteps.map(step => `
-                                <div class="relative z-10 flex flex-col items-center text-center">
-                                    <div class="w-6 h-6 rounded-full border-2 ${
-                                        step.status === 'completed' ? 'bg-green-500 border-green-500' : 
-                                        step.status === 'in_progress' ? 'bg-blue-500 border-blue-500 animate-pulse' : 
-                                        'bg-white border-slate-200'
-                                    } flex items-center justify-center mb-2">
-                                        ${step.status === 'completed' ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
-                                    </div>
-                                    <p class="text-[8px] font-black text-slate-900 leading-tight uppercase tracking-tighter">${step.label}</p>
-                                </div>
-                            `).join('')}
+                    <div>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-tighter leading-none">${patient.info.name}</h2>
+                            <div class="flex gap-4 mt-2">
+                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">${(patient.info.doctor.startsWith('Dr.') ? '' : 'Dr. ') + patient.info.doctor}</p>
+                                <span class="text-slate-200">•</span>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nurse: ${patient.info.nurseInCharge}</p>
+                            </div>
                         </div>
+                </div>
+
+                <div class="flex gap-8 px-8 border-l border-slate-100">
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Primary Diagnosis</p>
+                        <p class="text-xs font-black text-slate-700 max-w-[250px] truncate">${patient.info.diagnosis}</p>
                     </div>
-
-                    <!-- Clinical Notes -->
-                    <div class="glass-panel p-6 rounded-[2.5rem]">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Latest Notes</h3>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <p class="text-[11px] text-slate-600 leading-relaxed font-bold italic">
-                                "${patient.info.clinicalProgress || 'No notes available'}"
-                            </p>
-                        </div>
+                    <div class="px-6 py-2 rounded-xl ${patient.info.allergies !== 'None (NKDA)' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}">
+                        <p class="text-[8px] font-black uppercase tracking-widest mb-0.5">Allergies</p>
+                        <p class="text-[10px] font-black">${patient.info.allergies}</p>
                     </div>
                 </div>
 
-                <!-- CENTER: eMAR COMMAND CENTER -->
-                <div class="col-span-12 lg:col-span-6">
-                    <div class="glass-panel rounded-[2.5rem] overflow-hidden">
-                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-                            <div>
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">eMAR Administration Console</h3>
-                                <p class="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Electronic Medication Administration Record • Bed ${patient.bedNumber}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-200">${medications.length} Prescriptions</span>
-                            </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Vitals (Last Refreshed)</p>
+                        <div class="flex gap-3 text-[10px] font-black text-slate-900">
+                            <span class="text-blue-600">${patient.info.diagnosticResults.vitals.bp}</span>
+                            <span class="text-red-600">${patient.info.diagnosticResults.vitals.hr} bpm</span>
                         </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openPatientModal(${patient.bedNumber})" class="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 active:scale-95 transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            Click patient profile
+                        </button>
+                        <button onclick="generatePrescriptionPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            Print eMAR
+                        </button>
+                        <button onclick="generateAllHEPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                            Print HE Notes
+                        </button>
+                        <button onclick="openPatientBCMAModal(${patient.bedNumber})" class="btn-premium px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all">
+                            Patient History
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- DESKTOP CLINICAL TABLE -->
-                        <div class="desktop-only overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
-                                    <tr>
-                                        <th class="px-8 py-5">Medication Agent</th>
-                                        <th class="px-6 py-5">Clinical Dosing</th>
-                                        <th class="px-6 py-5">Due Status</th>
-                                        <th class="px-8 py-5 text-right">Verification</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 bg-white/30">
-                                    ${medications.map(med => {
-                                        const isGiven = med.status === 'Given' || med.status === 'Administered';
-                                        const isMissed = med.status === 'Missed';
-                                        const protocol = db.medicationProtocols[med.name];
-                                        
-                                        return `
-                                            <tr class="group transition-all duration-300 ${isGiven || isMissed ? 'opacity-60' : 'hover:bg-blue-50/50'}">
-                                                <td class="px-8 py-6">
-                                                    <div class="flex items-center gap-3">
-                                                        <div class="w-2 h-2 rounded-full ${isGiven ? 'bg-green-500' : isMissed ? 'bg-red-500' : 'bg-amber-400 animate-pulse'}"></div>
-                                                        <div>
-                                                            <div class="flex items-center gap-2">
-                                                                <p class="text-sm font-black text-slate-900 tracking-tight cursor-help hover:text-blue-700 transition-colors" onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')">${med.name}</p>
-                                                                <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="p-1 text-indigo-400 hover:text-indigo-600 transition-colors" title="Clinical Guidelines">
-                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                                </button>
-                                                            </div>
-                                                            <div class="flex items-center gap-2 mt-1">
-                                                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${med.frequency}</span>
-                                                                ${protocol?.isHighAlert ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[7px] font-black">HIGH ALERT</span>' : ''}
-                                                                ${protocol?.isLASA ? '<span class="px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded text-[7px] font-black">LASA</span>' : ''}
-                                                            </div>
-                                                            ${isMissed ? `
-                                                                <div class="mt-2 p-2 bg-red-50 rounded-lg border border-red-100">
-                                                                    <p class="text-[8px] font-black text-red-600 uppercase tracking-tighter">Missed: ${med.justification}</p>
-                                                                    ${med.remarks ? `<p class="text-[8px] font-bold text-red-400 mt-1 italic">${med.remarks}</p>` : ''}
-                                                                </div>
-                                                            ` : `
-                                                                <div class="mt-2 pt-2 border-t border-slate-50">
-                                                                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Prescribing Doctor</p>
-                                                                    <p class="text-[10px] font-black text-blue-800">${med.prescribingDoctor || patient.info.doctor}</p>
-                                                                </div>
-                                                            `}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-6">
-                                                    <p class="text-xs font-black text-slate-700 leading-none">${med.dose}</p>
-                                                    <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mt-1.5 bg-blue-50 px-2 py-0.5 rounded-md inline-block border border-blue-100/50">${med.route}</p>
-                                                </td>
-                                                <td class="px-6 py-6">
-                                                    <div class="flex flex-col">
-                                                        <span class="text-[10px] font-black text-slate-600">${formatDateTime(med.timeDue)}</span>
-                                                        <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">Ref ID: ${med.id.split('-').pop()}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="px-8 py-6 text-right">
-                                                    ${isGiven 
-                                                        ? `<div class="flex flex-col items-end gap-2">
-                                                            <div class="flex items-center gap-2">
-                                                                <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm border border-indigo-100" title="Education Sheet">
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                                                </button>
-                                                                <span class="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[9px] font-black border border-green-100 uppercase tracking-widest">Administered</span>
-                                                            </div>
-                                                            <div class="text-right">
-                                                                <p class="text-[9px] font-black text-slate-900">${med.nurseName || 'Authorized Nurse'}</p>
-                                                                <p class="text-[8px] font-bold text-slate-400">${new Date(med.timeAdministered).toLocaleTimeString()}</p>
-                                                            </div>
-                                                          </div>`
-                                                        : isMissed 
-                                                        ? `<div class="flex flex-col items-end gap-2">
-                                                            <span class="px-3 py-1 bg-red-50 text-red-700 rounded-full text-[9px] font-black border border-red-100 uppercase tracking-widest">Missed</span>
-                                                            <div class="text-right">
-                                                                <p class="text-[9px] font-black text-slate-900">${med.nurseName || 'Authorized Nurse'}</p>
-                                                                <p class="text-[8px] font-bold text-slate-400">${new Date(med.timeAdministered).toLocaleTimeString()}</p>
-                                                            </div>
-                                                          </div>`
-                                                        : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-blue-900/10 active:scale-95 transition-all">Verify & Administer</button>`
-                                                    }
-                                                </td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+            <!-- eMAR Table (Scrollable area) -->
+            <div class="flex-grow bg-white rounded-3xl border-2 border-slate-100 shadow-2xl overflow-hidden flex flex-col">
+                <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+                    <h3 class="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Standard Clinical Administration Record (eMAR)</h3>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase">${medications.length} Rx</span>
+                        ${dispensedMeds.length > 0 ? `<span class="px-2 py-0.5 bg-green-500 text-white rounded text-[9px] font-black animate-pulse">${dispensedMeds.length} DISPENSED</span>` : ''}
+                    </div>
+                </div>
 
-                        <!-- MOBILE CLINICAL VIEW -->
-                        <div class="mobile-only p-5 space-y-4">
+                <div class="flex-grow overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-white z-10 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <tr>
+                                <th class="px-8 py-4">Medication Agent</th>
+                                <th class="px-6 py-4">Route/Freq</th>
+                                <th class="px-6 py-4 text-center">Schedule</th>
+                                <th class="px-6 py-4">Remarks/Legal Record</th>
+                                <th class="px-8 py-4 text-right">Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
                             ${medications.map(med => {
                                 const isGiven = med.status === 'Given' || med.status === 'Administered';
                                 const isMissed = med.status === 'Missed';
+                                const now = new Date();
+                                const dueTime = new Date(med.timeDue);
+                                const isOverdue = !isGiven && !isMissed && now > dueTime;
+                                
                                 return `
-                                    <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
-                                        <div class="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h4 class="text-lg font-black text-slate-900 tracking-tight leading-none">${med.name}</h4>
-                                                <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest mt-2 bg-blue-50 px-2 py-1 rounded-lg inline-block">${med.dose} • ${med.route}</p>
-                                                <div class="mt-2 text-[9px] font-bold text-slate-400">
-                                                    <p class="uppercase tracking-tighter">Ordered By:</p>
-                                                    <p class="text-blue-800 font-black">${med.prescribingDoctor || patient.info.doctor}</p>
+                                    <tr class="group transition-all ${isGiven || isMissed ? 'bg-slate-50/50 opacity-60' : 'hover:bg-blue-50/30'}">
+                                        <td class="px-8 py-6">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-2.5 h-2.5 rounded-full ${isGiven ? 'bg-green-500' : isMissed || isOverdue ? 'bg-red-500' : 'bg-amber-400 animate-pulse'}"></div>
+                                                <div class="flex-grow">
+                                                    <div class="flex items-center gap-2">
+                                                        <p class="text-sm font-black text-slate-900 tracking-tight leading-none">${med.name}</p>
+                                                        <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-600" title="Clinical Information & HE">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                    <p class="text-[10px] font-bold text-slate-500 mt-1.5">${med.dose}</p>
                                                 </div>
                                             </div>
-                                            <div class="text-right">
-                                                <span class="text-[9px] font-black text-slate-400 uppercase block">${formatDateTime(med.timeDue)}</span>
-                                                <span class="text-[8px] font-bold text-slate-300 uppercase">${med.frequency}</span>
-                                            </div>
-                                        </div>
-                                        ${isGiven 
-                                            ? `<div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                                <div class="flex items-center gap-2">
-                                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                                    <span class="text-[10px] font-black text-green-700 uppercase tracking-widest">Administered</span>
+                                        </td>
+                                        <td class="px-6 py-6">
+                                            <span class="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${med.route}</span>
+                                            <p class="text-[9px] font-black text-slate-400 mt-1 uppercase">${med.frequency}</p>
+                                        </td>
+                                        <td class="px-6 py-6 text-center">
+                                            <span class="text-[10px] font-black text-slate-700">${formatDateTime(med.timeDue)}</span>
+                                            ${isOverdue ? '<p class="text-[8px] font-black text-red-600 uppercase tracking-widest mt-1">Overdue</p>' : ''}
+                                        </td>
+                                        <td class="px-6 py-6">
+                                            ${isMissed ? `
+                                                <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+                                                    <p class="text-[9px] font-black text-red-700 uppercase mb-0.5">${med.justification}</p>
+                                                    <p class="text-[10px] font-bold text-red-900 italic leading-tight">"${med.remarks || 'No remarks'}"</p>
                                                 </div>
-                                                <button onclick="handleOpenHE('${patient.info.mrn}', '${med.id}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] border-b border-indigo-200 pb-0.5">📘 HE Pamphlet</button>
-                                               </div>`
-                                            : isMissed 
-                                            ? `<div class="bg-red-50 p-4 rounded-2xl border border-red-100">
-                                                <div class="flex items-center gap-2 mb-2">
-                                                    <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                                                    <span class="text-[10px] font-black text-red-700 uppercase tracking-widest">Missed: ${med.justification}</span>
+                                            ` : isGiven ? `
+                                                <div class="p-3 bg-green-50 rounded-xl border border-green-100">
+                                                    <p class="text-[10px] font-bold text-green-800 italic leading-tight">"${med.remarks || 'Verified Administration'}"</p>
                                                 </div>
-                                                ${med.remarks ? `<p class="text-[9px] font-bold text-red-400 italic">${med.remarks}</p>` : ''}
-                                               </div>`
-                                            : `<button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="w-full py-5 bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 active:scale-95 transition-all">✔ Administer Now</button>`
-                                        }
-                                    </div>
+                                            ` : med.status === 'Dispensed' ? `
+                                                <div class="p-3 bg-blue-50 rounded-xl border border-blue-100 animate-pulse">
+                                                    <p class="text-[9px] font-black text-blue-700 uppercase">Awaiting Administration</p>
+                                                    <p class="text-[10px] font-bold text-blue-900 italic leading-tight mt-0.5">"${med.dispensingRemarks || 'Direct Transfer'}"</p>
+                                                </div>
+                                            ` : `<p class="text-[10px] font-bold text-slate-300 italic">No record entry...</p>`}
+                                        </td>
+                                        <td class="px-8 py-6 text-right">
+                                            ${isGiven 
+                                                ? `<div class="flex flex-col items-end">
+                                                    <p class="text-[10px] font-black text-slate-900 leading-none">${med.nurseName || 'Authorized Nurse'}</p>
+                                                    <p class="text-[8px] font-bold text-slate-400 mt-1">${new Date(med.timeAdministered).toLocaleTimeString()}</p>
+                                                  </div>`
+                                                : isMissed 
+                                                ? `<p class="text-[9px] font-black text-red-600 uppercase tracking-widest">Documented Missed</p>`
+                                                : `
+                                                    <div class="flex justify-end gap-2">
+                                                        ${isOverdue ? `
+                                                            <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="px-4 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 active:scale-95 transition-all">Omit</button>
+                                                        ` : ''}
+                                                        <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Administer</button>
+                                                    </div>
+                                                  `
+                                            }
+                                        </td>
+                                    </tr>
                                 `;
                             }).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- RIGHT: VITALS & DIAGNOSTICS (Sync with Profile View) -->
-                <div class="col-span-12 lg:col-span-3 space-y-6 lg:sticky lg:top-6">
-                    <!-- Vitals Panel -->
-                    <div class="bg-slate-950 text-white p-6 rounded-[2.5rem] shadow-2xl border border-slate-800">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Telemetry</h3>
-                            <div class="flex gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style="animation-delay: 0.2s"></span>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-y-6 gap-x-4">
-                            <div>
-                                <p class="text-[8px] text-slate-500 font-black uppercase mb-1">BP (mmHg)</p>
-                                <p class="text-xl font-black text-slate-100">${patient.info.diagnosticResults.vitals.bp}</p>
-                            </div>
-                            <div>
-                                <p class="text-[8px] text-slate-500 font-black uppercase mb-1">HR (BPM)</p>
-                                <p class="text-xl font-black text-red-500">${patient.info.diagnosticResults.vitals.hr}</p>
-                            </div>
-                            <div>
-                                <p class="text-[8px] text-slate-500 font-black uppercase mb-1">SpO2 (%)</p>
-                                <p class="text-xl font-black text-cyan-400">${patient.info.diagnosticResults.vitals.spo2}</p>
-                            </div>
-                            <div>
-                                <p class="text-[8px] text-slate-500 font-black uppercase mb-1">Temp (°C)</p>
-                                <p class="text-xl font-black text-orange-400">${patient.info.diagnosticResults.vitals.temp}°C</p>
-                            </div>
-                            <div class="col-span-2 pt-4 border-t border-slate-800">
-                                <p class="text-[8px] text-yellow-500 font-black uppercase mb-1">Glucose (DXT)</p>
-                                <p class="text-xl font-black text-yellow-500">${patient.info.diagnosticResults.vitals.dxt}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Imaging Panel -->
-                    <div class="glass-panel p-6 rounded-[2.5rem]">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Diagnostic Imaging</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="group relative rounded-2xl overflow-hidden aspect-square bg-slate-100 cursor-pointer border border-slate-200">
-                                <img src="${patient.info.diagnosticResults.woundImage}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                                <div class="absolute inset-0 bg-blue-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-center p-2">
-                                    <span class="text-[8px] text-white font-black uppercase leading-tight">Wound Profile</span>
-                                </div>
-                            </div>
-                            <div class="group relative rounded-2xl overflow-hidden aspect-square bg-slate-100 cursor-pointer border border-slate-200">
-                                <img src="${patient.info.diagnosticResults.xrayImage}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                                <div class="absolute inset-0 bg-blue-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-center p-2">
-                                    <span class="text-[8px] text-white font-black uppercase leading-tight">Chest X-Ray</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onclick="window.print()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
-                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                        Export Clinical eMAR
-                    </button>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        `;
-    } else {
-        mainContentHtml = `
-            <div class="flex flex-col items-center justify-center py-32 opacity-20">
-                <div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center mb-6">
-                    <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                </div>
-                <h3 class="text-2xl font-black text-slate-400 uppercase tracking-[0.3em]">System Standby</h3>
-                <p class="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">Select an active bed unit to initiate clinical documentation</p>
-            </div>
-        `;
-    }
+        </div>
+    `;
 
-    container.className = "max-w-[1400px] mx-auto px-4"; 
-    container.innerHTML = patientPillsHtml + mainContentHtml;
+    container.innerHTML = sidebarHtml + mainContentHtml;
 }
+
+window.selectPatientForBCMA = function(mrn) {
+    const db = getDB();
+    const patient = db.patients.find(p => p.info.mrn === mrn);
+    if (patient) {
+        currentBCMAPatient = patient;
+        renderCabinet2();
+    }
+};
 
 /**
  * Global Handler for Health Education Pamphlets
@@ -936,16 +985,22 @@ window.registerNewPatient = function(bedNumber) {
     const firstName = ['Ahmad', 'Fatimah', 'Zubair', 'Aisyah', 'Umar', 'Khadijah', 'Ali', 'Zainab', 'Hassan', 'Maryam'][Math.floor(Math.random() * 10)];
     const lastName = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'][Math.floor(Math.random() * 10)];
     
-    // Demo Optimization: Dynamic Time Scheduling
-    // Prevent excessive missed doses by setting "Time Due" to current time + small offsets
+    // Demo Optimization: Dynamic Time Scheduling & Unique Prescribing Doctors
     const now = new Date();
+    
+    // Create a pool of doctors and shuffle them to ensure uniqueness for each medication if needed,
+    // or just ensure the patient's doctor is unique from other cases.
+    const shuffledDoctors = [...db.doctors].sort(() => 0.5 - Math.random());
+    const caseDoctor = shuffledDoctors.pop();
+    
     const patientMeds = scenario.meds.map((med, index) => {
         const timeDue = new Date(now.getTime());
         // Stagger due times: -15 min (slightly overdue), +30 min (due soon), +2h, +4h
         const offsets = [-15, 30, 120, 240]; 
         timeDue.setMinutes(timeDue.getMinutes() + offsets[index % offsets.length]);
         
-        const doctor = db.doctors[Math.floor(Math.random() * db.doctors.length)];
+        // Use a different doctor from the pool for each medication order if possible
+        const prescribingDoc = shuffledDoctors.length > 0 ? shuffledDoctors.pop() : caseDoctor;
 
         return {
             id: `MED-${Date.now()}-${bedNumber}-${index}`,
@@ -955,7 +1010,7 @@ window.registerNewPatient = function(bedNumber) {
             frequency: med.freq,
             timeDue: timeDue.toISOString(),
             status: 'Pending',
-            prescribingDoctor: doctor, // KKM MAR Requirement
+            prescribingDoctor: prescribingDoc, // KKM MAR Requirement
             nurseId: 'Admitting Nurse',
             nurseInCharge: currentUser.fullname, // Current session nurse
             timeDispensed: null,
@@ -969,7 +1024,7 @@ window.registerNewPatient = function(bedNumber) {
         name: `${firstName} ${lastName}`,
         mrn: rn.toUpperCase(),
         bedNumber: bedNumber,
-        doctor: db.doctors[Math.floor(Math.random() * db.doctors.length)],
+        doctor: caseDoctor.startsWith('Dr.') ? caseDoctor : 'Dr. ' + caseDoctor,
         nurseInCharge: currentUser.fullname, // KKM MAR Requirement
         diagnosis: scenario.diagnosis,
         clinicalProgress: scenario.clinicalNote,
@@ -1061,7 +1116,7 @@ function triggerDrawerSimulation(callback, title = "Cabinet Access", message = "
         }
     }, 100);
 
-    let timeLeft = 10;
+    let timeLeft = 5;
     countdownEl.innerText = timeLeft;
 
     const timer = setInterval(() => {
@@ -1073,7 +1128,7 @@ function triggerDrawerSimulation(callback, title = "Cabinet Access", message = "
             setTimeout(() => {
                 overlay.classList.remove('active');
                 if (callback) callback();
-            }, 1000);
+            }, 500);
         }
     }, 1000);
 }
@@ -1087,7 +1142,7 @@ window.triggerTransferSimulation = function(callback) {
 
     let progress = 0;
     const interval = setInterval(() => {
-        progress += Math.random() * 20;
+        progress += 5; // Faster increment for 5s total
         if (progress > 100) progress = 100;
         progressBar.style.width = `${progress}%`;
 
@@ -1098,7 +1153,7 @@ window.triggerTransferSimulation = function(callback) {
                 if (callback) callback();
             }, 500);
         }
-    }, 400);
+    }, 200); // 200ms * 20 steps = 4 seconds + buffer = 5s
 }
 
 window.triggerPreparationSimulation = function(callback, solution, med) {
@@ -1114,7 +1169,7 @@ window.triggerPreparationSimulation = function(callback, solution, med) {
 
     let progress = 0;
     const interval = setInterval(() => {
-        progress += 2;
+        progress += 4; // Faster increment
         const offset = totalCircumference - (progress / 100) * totalCircumference;
         progressCircle.style.strokeDashoffset = offset;
 
@@ -1123,9 +1178,9 @@ window.triggerPreparationSimulation = function(callback, solution, med) {
             setTimeout(() => {
                 overlay.classList.remove('active');
                 if (callback) callback();
-            }, 800);
+            }, 500);
         }
-    }, 50);
+    }, 150); // 150ms * 25 steps = 3.75s + buffer = ~5s
 }
 
 window.reportAssetIssue = function(itemId) {
@@ -1367,7 +1422,7 @@ function openPatientModal(bedNumber) {
                         </div>
                         <div>
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Attending Clinician</p>
-                            <p class="text-sm font-bold text-blue-900">${patient.info.doctor}</p>
+                            <p class="text-sm font-bold text-blue-900">${(patient.info.doctor.startsWith('Dr.') ? '' : 'Dr. ') + patient.info.doctor}</p>
                         </div>
                     </div>
                 </div>
