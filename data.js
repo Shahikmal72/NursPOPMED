@@ -17,11 +17,11 @@ const MASTER_USERS = [
     { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Nurse' },
     { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse Manager' },
     { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
+    { fullname: 'Ms. Nurul Najwa Rostam', id: 'Najwa_Rostam', password: 'Najwa123', role: 'Nurse' },
     { fullname: 'Mr. Danial Imran', id: 'Danial_Imran', password: 'Dan123', role: 'Nurse' },
     { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Medical Doctor' },
     { fullname: 'Sir Farhan Mahmud', id: 'Farhan_Mahmud', password: 'Farhan123', role: 'Director of Nursing' },
     { fullname: 'Dr. Syamsul Ahmad Arifin', id: 'Syamsul_Arifin', password: 'Doc123', role: 'Medical Doctor' },
-    { fullname: 'Dr. Mohd Azri Abd Jalil', id: 'Azri_AbdJalil', password: 'Doc123', role: 'Medical Doctor' },
     { fullname: 'Dr. Sarah Zulifli', id: 'Sarah_Zulifli', password: 'Doc123', role: 'Medical Doctor' },
     { fullname: 'Dr. Shidqiyyah Abd Hamid', id: 'Shidqiyyah_Hamid', password: 'Doc123', role: 'Medical Doctor' },
     { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'System Assessor' },
@@ -34,6 +34,7 @@ const MASTER_USERS = [
     { fullname: 'Dr. Kamil Che Hassan', id: 'Kamil_Hassan', password: 'Doc123', role: 'Medical Doctor' },
     { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
     { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
+    { fullname: 'Ms. Nurul Najwa Rostam', id: 'Najwa_Rostam', password: 'Najwa123', role: 'Pharmacist' },
     { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'System Assessor' },
 ];
 
@@ -704,6 +705,48 @@ function ensureInventoryLotDepth(item, extraLots = 0) {
     return refreshInventoryDerivedFields(item);
 }
 
+function normalizeOperationalData(db) {
+    if (!db || typeof db !== 'object') return db;
+
+    if (Array.isArray(db.inventory)) {
+        db.inventory.forEach(item => {
+            if (!Array.isArray(item.lots) || item.lots.length < 2) {
+                ensureInventoryLotDepth(item, Math.max(0, 2 - (item.lots?.length || 0)));
+            } else {
+                refreshInventoryDerivedFields(item);
+            }
+        });
+    }
+
+    if (Array.isArray(db.patients)) {
+        let missedCounter = 0;
+        db.patients.forEach(patient => {
+            if (!Array.isArray(patient.medications)) return;
+            patient.medications.forEach(med => {
+                if (!med.prescribingDoctor) {
+                    med.prescribingDoctor = randomChoice(initialData.doctors);
+                }
+                if (!med.prescribedAt) {
+                    med.prescribedAt = createRandomTodayTimestamp(new Date(), 20, 720);
+                }
+
+                if (med.status === 'Missed') {
+                    missedCounter++;
+                    if (missedCounter > 6) {
+                        med.status = 'Pending';
+                        med.justification = null;
+                        med.remarks = '';
+                        med.timeAdministered = null;
+                        med.timeDue = new Date(Date.now() + (30 + Math.floor(Math.random() * 240)) * 60000).toISOString();
+                    }
+                }
+            });
+        });
+    }
+
+    return db;
+}
+
 function refreshInventoryDerivedFields(item) {
     if (!item) return item;
 
@@ -1282,6 +1325,7 @@ function syncReferenceData(db, options = {}) {
     db.medicationProtocols = initialData.medicationProtocols;
     db.ivSolutions = initialData.ivSolutions;
     db.doctors = initialData.doctors;
+    normalizeOperationalData(db);
 
     if (options.persist) {
         localStorage.setItem('popmed_db', JSON.stringify(db));
