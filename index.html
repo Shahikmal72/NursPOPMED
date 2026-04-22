@@ -2083,7 +2083,7 @@
                 if (isSuccess) {
                     const db = getDB();
                     // Fallback to finding user from DB if authResult doesn't contain user object (old version)
-                    const user = (authResult && authResult.user) ? authResult.user : db.users.find(u => u.id === id || u.id.toLowerCase() === id.toLowerCase().replace(/\s+/g, '_'));
+                    const user = (authResult && authResult.user) ? authResult.user : findUserInDB(id, db);
                     
                     if (!user) throw new Error('User data synchronization failed.');
 

@@ -1,28 +1,75 @@
+// MASTER REFERENCE CONFIG
+// Safe to edit anytime, then refresh the app.
+// These values are automatically re-synced into the live database:
+// - users (fullname, id, password, role)
+// - developers
+// - supervisor
+// - doctors
+// - medications / ivSolutions / medicationProtocols
+//
+// Do not edit operational runtime data here such as:
+// - patients
+// - logs
+// - inventory quantities created during usage
+// unless you intentionally want to change the system seed/defaults.
+
+const MASTER_USERS = [
+    { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Nurse' },
+    { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse Manager' },
+    { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
+    { fullname: 'Mr. Danial Imran', id: 'Danial_Imran', password: 'Dan123', role: 'Nurse' },
+    { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Medical Doctor' },
+    { fullname: 'Sir Farhan Mahmud', id: 'Farhan_Mahmud', password: 'Farhan123', role: 'Director of Nursing' },
+    { fullname: 'Dr. Syamsul Ahmad Arifin', id: 'Syamsul_Arifin', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Mohd Azri Abd Jalil', id: 'Azri_AbdJalil', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Sarah Zulifli', id: 'Sarah_Zulifli', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Shidqiyyah Abd Hamid', id: 'Shidqiyyah_Hamid', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'System Assessor' },
+    { fullname: 'Dr. Siti Noorkhairina Binti Sowtali', id: 'Siti_Noorkhairina', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Sanisah Saidi', id: 'Sanisah_Saidi', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Mohd Said Nurumal', id: 'Mohd_Said', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Salizar Mohamed Ludin', id: 'Salizar_Ludin', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Azlina Daud', id: 'Azlina_Daud', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Siti Roshaidai', id: 'Siti_Roshaidai', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Kamil Che Hassan', id: 'Kamil_Hassan', password: 'Doc123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
+    { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'System Assessor' },
+];
+
+const MASTER_DEVELOPERS = [
+    { name: 'Muhammad Shah Ikmal Junaidi', role: 'System Developer' },
+    { name: 'Arisya Elyana Ahmad Fairuz', role: 'Project Coordinator & Architect' },
+    { name: 'Nuraleeya Tahirah Mohammad', role: 'Clinical Workflow Analyst' },
+    { name: 'Nurshazreen Aqeela Mat Zaib', role: 'Project Coordinator & Quality Lead' },
+    { name: 'Siti Nurkhairina Amad Jupri', role: 'Clinical Workflow Designer' }
+];
+
+const MASTER_SUPERVISOR = {
+    name: 'Dr. Mohd. Azri Abd. Jalil',
+    designation: 'Innovation in Nursing Supervisor'
+};
+
+const MASTER_DOCTORS = [
+    'Dr. Syamsul Ahmad Arifin',
+    'Dr. Mohd Azri Abd Jalil',
+    'Dr. Sarah Zulifli',
+    'Dr. Shidqiyyah Abd Hamid',
+    'Dr. Azmir Ahmad',
+    'Dr. Siti Noorkhairina Binti Sowtali',
+    'Dr. Sanisah Saidi',
+    'Dr. Mohd Said Nurumal',
+    'Dr. Salizar Mohamed Ludin',
+    'Dr. Azlina Daud',
+    'Dr. Siti Roshaidai',
+    'Dr. Kamil Che Hassan',
+    'Dr. Khairina Jupri',
+    'Dr. Shazreen',
+];
+
 // Initial Data for POPMED System
 const initialData = {
-    users: [
-        { fullname: 'Ms. Arisya Elyana', id: 'Arisya_Elyana', password: 'Arisya123', role: 'Nurse' },
-        { fullname: 'Mr. Shah Ikmal', id: 'Shah_Ikmal', password: 'Shah123', role: 'Nurse' },
-        { fullname: 'Ms. Leeya Tahirah', id: 'Leeya_Tahirah', password: 'Leeya123', role: 'Nurse' },
-        { fullname: 'Mr. Danial Imran', id: 'Danial_Imran', password: 'Dan123', role: 'Nurse' },
-        { fullname: 'Dr. Azri Jalil', id: 'Azri_Jalil', password: 'Azri123', role: 'Medical Doctor' },
-        { fullname: 'Sir Farhan Mahmud', id: 'Farhan_Mahmud', password: 'Farhan123', role: 'Director of Nursing' },
-        { fullname: 'Dr. Syamsul Ahmad Arifin', id: 'Syamsul_Arifin', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Mohd Azri Abd Jalil', id: 'Azri_AbdJalil', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Sarah Zulifli', id: 'Sarah_Zulifli', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Shidqiyyah Abd Hamid', id: 'Shidqiyyah_Hamid', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Azmir Ahmad', id: 'Azmir_Ahmad', password: 'Azmir123', role: 'System Assessor' }, 
-        { fullname: 'Dr. Siti Noorkhairina Binti Sowtali', id: 'Siti_Noorkhairina', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Sanisah Saidi', id: 'Sanisah_Saidi', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Mohd Said Nurumal', id: 'Mohd_Said', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Salizar Mohamed Ludin', id: 'Salizar_Ludin', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Azlina Daud', id: 'Azlina_Daud', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Siti Roshaidai', id: 'Siti_Roshaidai', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Kamil Che Hassan', id: 'Kamil_Hassan', password: 'Doc123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Khairina Jupri', id: 'Khairina_Jupri', password: 'Khairina123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Shazreen', id: 'Shazreen_Arin', password: 'Arin123', role: 'Medical Doctor' },
-        { fullname: 'Dr. Hasanah Pairoh', id: 'Hasanah_Pairoh', password: 'Hasanah123', role: 'System Assessor' }, 
-    ],
+    users: MASTER_USERS,
     medications: {
         oral: [
             'Paracetamol 500mg Tablet', 
@@ -73,17 +120,8 @@ const initialData = {
         ]
     },
     // System Development Team
-    developers: [
-        { name: 'Muhammad Shah Ikmal Junaidi', role: 'System Developer' },
-        { name: 'Arisya Elyana Ahmad Fairuz', role: 'Project Coordinator & Architect' },
-        { name: 'Nuraleeya Tahirah Mohammad', role: 'Clinical Workflow Analyst' },
-        { name: 'Nurshazreen Aqeela Mat Zaib', role: 'Project Coordinator & Quality Lead' },
-        { name: 'Siti Nurkhairina Amad Jupri', role: 'Clinical Workflow Designer' }
-    ],
-    supervisor: {
-        name: 'Dr. Mohd. Azri Abd. Jalil',
-        designation: 'Innovation in Nursing Supervisor'
-    },
+    developers: MASTER_DEVELOPERS,
+    supervisor: MASTER_SUPERVISOR,
     ivSolutions: [
         'Sodium Chloride 0.9% (Normal Saline) 500ml Infusion',
         'Sodium Chloride 0.9% (Normal Saline) 1000ml Infusion',
@@ -96,22 +134,7 @@ const initialData = {
         'Sterile Water for Injection (SWFI) 100ml'
     ],
     // Clinical Faculty from Kulliyyah of Nursing (KON), IIUM
-    doctors: [
-        'Dr. Syamsul Ahmad Arifin',
-        'Dr. Mohd Azri Abd Jalil',
-        'Dr. Sarah Zulifli',
-        'Dr. Shidqiyyah Abd Hamid',
-        'Dr. Azmir Ahmad',
-        'Dr. Siti Noorkhairina Binti Sowtali',
-        'Dr. Sanisah Saidi',
-        'Dr. Mohd Said Nurumal',
-        'Dr. Salizar Mohamed Ludin',
-        'Dr. Azlina Daud',
-        'Dr. Siti Roshaidai',
-        'Dr. Kamil Che Hassan',
-        'Dr. Khairina Jupri',
-        'Dr. Shazreen',
-    ],
+    doctors: MASTER_DOCTORS,
     inventory: [], // Pharmacological Inventory
     patients: [], // Clinical Bed Units 1-25
     logs: [], // Clinical Audit Trail

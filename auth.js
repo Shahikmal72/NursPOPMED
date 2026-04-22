@@ -7,9 +7,31 @@ function normalizeUserIdentifier(userId) {
     return (userId || '').trim().toLowerCase().replace(/\s+/g, '_');
 }
 
+function normalizeLooseUserIdentifier(userId) {
+    return (userId || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^(mr|mrs|ms|miss|sir|dr)\.?\s+/i, '')
+        .replace(/[^a-z0-9]/g, '');
+}
+
 function findUserInDB(userId, db = getDB()) {
     const normalizedInput = normalizeUserIdentifier(userId);
-    return db.users.find(u => normalizeUserIdentifier(u.id) === normalizedInput) || null;
+    const looseInput = normalizeLooseUserIdentifier(userId);
+
+    return db.users.find(u => {
+        const candidates = [
+            u.id,
+            u.fullname,
+            u.id?.replace(/_/g, ' '),
+            u.fullname?.replace(/\./g, '')
+        ].filter(Boolean);
+
+        return candidates.some(candidate =>
+            normalizeUserIdentifier(candidate) === normalizedInput ||
+            normalizeLooseUserIdentifier(candidate) === looseInput
+        );
+    }) || null;
 }
 
 function persistCurrentUserSession(user) {
@@ -43,7 +65,7 @@ function login(userId, password) {
 
     const user = findUserInDB(userId, db);
     
-    if (user && user.password === password) {
+    if (user && String(user.password) === String(password).trim()) {
         currentUser = user;
         if (!currentUser.role) currentUser.role = 'Clinical Staff';
         
