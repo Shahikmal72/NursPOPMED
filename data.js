@@ -683,6 +683,27 @@ function createInventoryLot(quantity = 0, expiry = null, batch = null) {
     };
 }
 
+function createRandomTodayTimestamp(baseDate = new Date(), minMinutesAgo = 10, maxMinutesAgo = 720) {
+    const minutesAgo = Math.floor(Math.random() * (maxMinutesAgo - minMinutesAgo + 1)) + minMinutesAgo;
+    return new Date(baseDate.getTime() - (minutesAgo * 60 * 1000)).toISOString();
+}
+
+function ensureInventoryLotDepth(item, extraLots = 0) {
+    if (!item) return item;
+    if (!Array.isArray(item.lots)) item.lots = [];
+
+    for (let i = 0; i < extraLots; i++) {
+        item.lots.push(
+            createInventoryLot(
+                40 + Math.floor(Math.random() * 260),
+                new Date(Date.now() + (60 + Math.floor(Math.random() * 720)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            )
+        );
+    }
+
+    return refreshInventoryDerivedFields(item);
+}
+
 function refreshInventoryDerivedFields(item) {
     if (!item) return item;
 
@@ -697,11 +718,10 @@ function refreshInventoryDerivedFields(item) {
             expiry: lot.expiry || item.expiry || new Date().toISOString().split('T')[0],
             quantity: parseInt(lot.quantity, 10) || 0
         }))
-        .filter(lot => lot.quantity > 0)
         .sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
 
     const totalQty = item.lots.reduce((sum, lot) => sum + lot.quantity, 0);
-    const primaryLot = item.lots[0] || createInventoryLot(0, item.expiry, item.batch);
+    const primaryLot = item.lots.find(lot => lot.quantity > 0) || item.lots[0] || createInventoryLot(0, item.expiry, item.batch);
 
     item.quantity = totalQty;
     item.batch = primaryLot.batch;
@@ -938,6 +958,7 @@ function generateInitialPatients(data) {
     let totalMedsCreated = 0;
     let pendingCount = 0;
     let missedCount = 0;
+    let documentedCount = 0;
     const now = new Date();
 
     for (let i = 1; i <= 25; i++) {
@@ -963,19 +984,32 @@ function generateInitialPatients(data) {
 
             let status = 'Pending';
             let timeDue;
+            let timeAdministered = null;
+            let justification = null;
+            let remarks = '';
             
-            if (missedCount < 10) {
-                status = 'Pending';
-                timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 240) + 60) * 60000);
+            if (missedCount < 6) {
+                status = 'Missed';
+                timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 90) + 30) * 60000);
+                timeAdministered = new Date(timeDue.getTime() + (5 * 60000)).toISOString();
+                justification = missedCount < 3 ? 'Patient refused medication' : 'Medication temporarily unavailable';
+                remarks = 'Initial simulation data';
                 missedCount++;
             } else if (pendingCount < 40) {
                 status = 'Pending';
-                timeDue = new Date(now.getTime() + (Math.floor(Math.random() * 480) + 30) * 60000);
+                timeDue = new Date(now.getTime() + (Math.floor(Math.random() * 360) + 20) * 60000);
                 pendingCount++;
+            } else if (documentedCount < 20) {
+                status = 'Administered';
+                timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 240) + 20) * 60000);
+                timeAdministered = new Date(timeDue.getTime() + (Math.floor(Math.random() * 25) + 5) * 60000).toISOString();
+                remarks = 'Routine dose given as prescribed.';
+                documentedCount++;
             } else {
-                const isPast = Math.random() < 0.2;
+                const isPast = Math.random() < 0.15;
                 if (isPast) {
-                    timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 120) + 10) * 60000);
+                    status = 'Dispensed';
+                    timeDue = new Date(now.getTime() - (Math.floor(Math.random() * 45) + 10) * 60000);
                 } else {
                     timeDue = new Date(now.getTime() + (Math.floor(Math.random() * 600) + 10) * 60000);
                 }
@@ -990,17 +1024,16 @@ function generateInitialPatients(data) {
                 frequency: 'BD',
                 timeDue: timeDue.toISOString(),
                 status: status,
+                prescribedAt: createRandomTodayTimestamp(now, 15, 600),
                 prescribingDoctor: randomChoice(data.doctors),
-                justification: missedCount <= 5 ? 'Patient refused medication' : null,
-                remarks: missedCount <= 5 ? 'Initial simulation data' : '',
+                justification: justification,
+                remarks: remarks,
                 nurseId: 'System',
                 doctor: doctor,
-                timeDispensed: null,
-                timeAdministered: status === 'Missed' ? timeDue.toISOString() : null
+                timeDispensed: status === 'Dispensed' ? new Date(timeDue.getTime() - (Math.floor(Math.random() * 30) + 5) * 60000).toISOString() : null,
+                timeAdministered: timeAdministered,
+                nurseName: status === 'Administered' ? nurse : null
             });
-            if (status === 'Missed') {
-                patientMeds[patientMeds.length - 1].status = 'Missed';
-            }
             totalMedsCreated++;
         }
 
@@ -1077,7 +1110,11 @@ function initializeDB() {
                     const day = Math.floor(Math.random() * 28) + 1;
                     item.lots = [createInventoryLot(item.quantity || 500, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, item.batch)];
                 }
-                refreshInventoryDerivedFields(item);
+                if (item.lots.length < 2) {
+                    ensureInventoryLotDepth(item, 2 - item.lots.length);
+                } else {
+                    refreshInventoryDerivedFields(item);
+                }
             });
         }
         
@@ -1097,6 +1134,9 @@ function initializeDB() {
                         if (!med.prescribingDoctor) {
                             med.prescribingDoctor = randomChoice(initialData.doctors);
                         }
+                        if (!med.prescribedAt) {
+                            med.prescribedAt = createRandomTodayTimestamp(new Date(), 20, 720);
+                        }
                     });
                 }
             });
@@ -1107,6 +1147,7 @@ function initializeDB() {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
         if (existingDB.patients && Array.isArray(existingDB.patients)) {
+            let normalizedMissedCount = 0;
             existingDB.patients.forEach(patient => {
                 if (patient.medications && Array.isArray(patient.medications)) {
                     patient.medications.forEach(med => {
@@ -1115,6 +1156,29 @@ function initializeDB() {
                         const newDue = new Date(startOfToday.getTime());
                         newDue.setHours(oldDue.getHours(), oldDue.getMinutes(), oldDue.getSeconds());
                         med.timeDue = newDue.toISOString();
+
+                        if (!med.prescribedAt) {
+                            med.prescribedAt = createRandomTodayTimestamp(now, 20, 720);
+                        } else {
+                            const oldPrescribed = new Date(med.prescribedAt);
+                            const newPrescribed = new Date(startOfToday.getTime());
+                            newPrescribed.setHours(oldPrescribed.getHours(), oldPrescribed.getMinutes(), oldPrescribed.getSeconds());
+                            if (newPrescribed > newDue) {
+                                newPrescribed.setTime(newDue.getTime() - ((10 + Math.floor(Math.random() * 90)) * 60000));
+                            }
+                            med.prescribedAt = newPrescribed.toISOString();
+                        }
+
+                        if (med.status === 'Missed') {
+                            normalizedMissedCount++;
+                            if (normalizedMissedCount > 6 && med.nurseId === 'System') {
+                                med.status = 'Pending';
+                                med.justification = null;
+                                med.remarks = '';
+                                med.timeAdministered = null;
+                                med.timeDue = new Date(now.getTime() + (30 + Math.floor(Math.random() * 240)) * 60000).toISOString();
+                            }
+                        }
                     });
                 }
             });
@@ -1151,7 +1215,7 @@ function initializeDB() {
                     isIVSolution: initialData.ivSolutions.includes(name),
                     lots: [createInventoryLot(500)]
                 });
-                refreshInventoryDerivedFields(existingDB.inventory[existingDB.inventory.length - 1]);
+                ensureInventoryLotDepth(existingDB.inventory[existingDB.inventory.length - 1], 1);
             }
         });
 
@@ -1201,7 +1265,7 @@ function initializeDB() {
             };
         });
 
-        initialData.inventory.forEach(refreshInventoryDerivedFields);
+        initialData.inventory.forEach(item => ensureInventoryLotDepth(item, 1));
 
         initialData.patients = generateInitialPatients(initialData);
         localStorage.setItem('popmed_db', JSON.stringify(initialData));

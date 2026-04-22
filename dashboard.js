@@ -44,16 +44,14 @@ function getLotLifecycle(expiry) {
 }
 
 function renderSevenRightsBoard(patient, med) {
-    const dueTime = new Date(med.timeDue);
-    const now = new Date();
-    const timeOk = Math.abs(now - dueTime) <= 60 * 60 * 1000 || med.status === 'Given' || med.status === 'Administered';
+    const verification = validate5Rights(patient, med, patient.info.mrn, med.barcode || '');
     const documentationDone = med.status === 'Administered' || med.status === 'Given';
     const rights = [
-        { label: 'Right Patient', value: `${patient.info.name} (${patient.info.mrn})`, ok: true },
-        { label: 'Right Drug', value: med.name, ok: !!med.name },
-        { label: 'Right Dose', value: med.dose || 'Not set', ok: !!med.dose },
-        { label: 'Right Route', value: med.route || 'Not set', ok: !!med.route },
-        { label: 'Right Time', value: formatDateTime(med.timeDue), ok: timeOk },
+        { label: 'Right Patient', value: `${patient.info.name} (${patient.info.mrn})`, ok: verification.patient.pass },
+        { label: 'Right Drug', value: med.name, ok: verification.drug.pass },
+        { label: 'Right Dose', value: med.dose || 'Not set', ok: verification.dose.pass },
+        { label: 'Right Route', value: med.route || 'Not set', ok: verification.route.pass },
+        { label: 'Right Time', value: formatDateTime(med.timeDue), ok: verification.time.pass },
         { label: 'Right Reason', value: patient.info.diagnosis || 'Clinical indication pending', ok: !!patient.info.diagnosis },
         { label: 'Right Documentation', value: documentationDone ? 'Recorded in eMAR' : 'Pending administration record', ok: documentationDone }
     ];
@@ -63,11 +61,12 @@ function renderSevenRightsBoard(patient, med) {
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">7 Rights Verification</p>
-                    <p class="text-xs font-bold text-slate-600 mt-1">Live administration safety check before medication is given.</p>
+                    <p class="text-xs font-bold text-slate-600 mt-1">${med.name} scheduled for ${formatDateTime(med.timeDue)}.</p>
                 </div>
                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
                     <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">Prescribed By</p>
                     <p class="text-sm font-black text-blue-900 mt-1">${formatPrescriberName(med.prescribingDoctor || patient.info.doctor)}</p>
+                    <p class="text-[9px] font-bold text-blue-700 mt-1">Prescription documented: ${formatDateTime(med.prescribedAt || med.timeDue)}</p>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -162,14 +161,12 @@ function updateDashboardStats() {
     
     patients.forEach(p => {
         p.medications.forEach(m => {
-            if (m.status === 'Pending' || m.status === 'Dispensed' || m.status === 'Missed') {
+            if (m.status === 'Pending' || m.status === 'Dispensed') {
                 const dueTime = new Date(m.timeDue);
-                if (m.status === 'Missed' || now > dueTime) {
-                    totalMissed++;
-                } else {
-                    totalPending++;
-                }
+                if (now > dueTime) totalPending++;
+                else totalPending++;
             }
+            if (m.status === 'Missed') totalMissed++;
         });
     });
 
@@ -815,6 +812,7 @@ function renderCabinet2() {
     const patient = currentBCMAPatient;
     const medications = patient.medications;
     const dispensedMeds = medications.filter(m => m.status === 'Dispensed');
+    const verificationMedication = medications.find(m => !['Given', 'Administered', 'Missed'].includes(m.status)) || medications.find(m => m.status === 'Missed') || medications[0];
     
     let mainContentHtml = `
         <div class="flex-grow flex flex-col gap-4">
@@ -919,8 +917,8 @@ function renderCabinet2() {
                                             <div class="rounded-2xl border border-blue-100 bg-blue-50 p-3">
                                                 <p class="text-[8px] font-black text-blue-500 uppercase tracking-widest">Prescribed By</p>
                                                 <p class="text-[11px] font-black text-blue-900 mt-1 leading-snug">${formatPrescriberName(med.prescribingDoctor || patient.info.doctor)}</p>
-                                                <p class="text-[8px] font-bold text-blue-600 mt-2 uppercase tracking-widest">Source Order</p>
-                                                <p class="text-[9px] font-bold text-blue-800 mt-1">${isGiven ? 'Verified in administration record' : 'Pending bedside verification'}</p>
+                                                <p class="text-[8px] font-bold text-blue-600 mt-2 uppercase tracking-widest">Prescription Time</p>
+                                                <p class="text-[9px] font-bold text-blue-800 mt-1">${formatDateTime(med.prescribedAt || med.timeDue)}</p>
                                             </div>
                                         </td>
                                         <td class="px-6 py-6">
@@ -993,7 +991,7 @@ function renderCabinet2() {
                 </div>
 
                 <div class="border-t border-slate-100 bg-slate-50/70 p-4 md:p-6">
-                    ${renderSevenRightsBoard(patient, medications[0] || { name: 'No medication', dose: '', route: '', timeDue: new Date().toISOString(), status: 'Pending' })}
+                    ${verificationMedication ? renderSevenRightsBoard(patient, verificationMedication) : ''}
                 </div>
             </div>
         </div>
@@ -1413,15 +1411,16 @@ window.showInventoryLots = function(itemId) {
     const lotsHtml = item.lots.map((lot, index) => {
         const lifecycle = getLotLifecycle(lot.expiry);
         const isFefo = index === 0;
+        const isDepleted = lot.quantity === 0;
         return `
-            <div class="rounded-2xl border ${lifecycle.label === 'Expired' ? 'border-red-200 bg-red-50' : lifecycle.label === 'Near Expiry' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'} p-4">
+            <div class="rounded-2xl border ${isDepleted ? 'border-slate-200 bg-slate-50' : lifecycle.label === 'Expired' ? 'border-red-200 bg-red-50' : lifecycle.label === 'Near Expiry' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'} p-4">
                 <div class="flex justify-between items-start gap-3">
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
                         <p class="text-sm font-mono font-bold text-slate-900">${lot.batch}</p>
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        <span class="px-2 py-1 rounded-full border text-[9px] font-black uppercase ${lifecycle.chipClass}">${lifecycle.label}</span>
+                        <span class="px-2 py-1 rounded-full border text-[9px] font-black uppercase ${isDepleted ? 'bg-slate-100 text-slate-600 border-slate-200' : lifecycle.chipClass}">${isDepleted ? 'Depleted' : lifecycle.label}</span>
                         ${isFefo ? '<span class="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black uppercase">FEFO Priority</span>' : ''}
                     </div>
                 </div>
@@ -1436,7 +1435,7 @@ window.showInventoryLots = function(itemId) {
                     </div>
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Shelf Life</p>
-                        <p class="text-sm font-bold ${lifecycle.textClass}">${lifecycle.subtitle}</p>
+                        <p class="text-sm font-bold ${isDepleted ? 'text-slate-600' : lifecycle.textClass}">${isDepleted ? 'Stock exhausted' : lifecycle.subtitle}</p>
                     </div>
                 </div>
             </div>
