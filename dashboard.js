@@ -1394,8 +1394,18 @@ window.reportAssetIssue = function(itemId) {
 window.showInventoryLots = function(itemId) {
     const db = getDB();
     const item = db.inventory.find(i => i.id === itemId);
-    if (!item) return;
-    refreshInventoryDerivedFields(item);
+    if (!item) {
+        showNotification('Batch details not found for this medication.', 'error');
+        return;
+    }
+    if (!Array.isArray(item.lots) || item.lots.length < 2) {
+        ensureInventoryLotDepth(item, Math.max(0, 2 - (item.lots?.length || 0)));
+    } else {
+        refreshInventoryDerivedFields(item);
+    }
+    updateDB(db);
+    const existingModal = document.getElementById('inventory-batch-modal');
+    if (existingModal) existingModal.remove();
     item.lots.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
     const expiredLots = item.lots.filter(lot => new Date(lot.expiry) < new Date());
     const nearExpiryLots = item.lots.filter(lot => {
@@ -1457,6 +1467,7 @@ window.showInventoryLots = function(itemId) {
     `;
 
     const modal = document.createElement('div');
+    modal.id = 'inventory-batch-modal';
     modal.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4';
     modal.innerHTML = `
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden animate-pop-in">
