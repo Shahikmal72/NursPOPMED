@@ -665,6 +665,60 @@ function uniqueCitations(citations) {
     return [...new Set(citations.filter(Boolean))];
 }
 
+function randomChoice(items) {
+    return items[Math.floor(Math.random() * items.length)];
+}
+
+function createInventoryLot(quantity = 0, expiry = null, batch = null) {
+    const now = new Date();
+    const fallbackExpiry = expiry || new Date(now.getTime() + (180 + Math.floor(Math.random() * 720)) * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+
+    return {
+        id: `LOT-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        batch: batch || `LOT-${Math.floor(Math.random() * 9000) + 1000}`,
+        expiry: fallbackExpiry,
+        quantity: parseInt(quantity, 10) || 0
+    };
+}
+
+function refreshInventoryDerivedFields(item) {
+    if (!item) return item;
+
+    if (!Array.isArray(item.lots) || item.lots.length === 0) {
+        item.lots = [createInventoryLot(item.quantity || 0, item.expiry, item.batch)];
+    }
+
+    item.lots = item.lots
+        .map(lot => ({
+            id: lot.id || `LOT-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            batch: lot.batch || item.batch || `LOT-${Math.floor(Math.random() * 9000) + 1000}`,
+            expiry: lot.expiry || item.expiry || new Date().toISOString().split('T')[0],
+            quantity: parseInt(lot.quantity, 10) || 0
+        }))
+        .filter(lot => lot.quantity > 0)
+        .sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+
+    const totalQty = item.lots.reduce((sum, lot) => sum + lot.quantity, 0);
+    const primaryLot = item.lots[0] || createInventoryLot(0, item.expiry, item.batch);
+
+    item.quantity = totalQty;
+    item.batch = primaryLot.batch;
+    item.expiry = primaryLot.expiry;
+    item.expiryDate = (() => {
+        const expiryDate = new Date(primaryLot.expiry);
+        if (Number.isNaN(expiryDate.getTime())) return item.expiryDate || primaryLot.expiry;
+        const day = String(expiryDate.getDate()).padStart(2, '0');
+        const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
+        const year = expiryDate.getFullYear();
+        return `${day}/${month}/${year}`;
+    })();
+    item.lotCount = item.lots.length;
+
+    return item;
+}
+
 function normalizeSideEffects(sideEffects) {
     if (Array.isArray(sideEffects)) return sideEffects.filter(Boolean);
     if (!sideEffects) return [];
@@ -936,6 +990,7 @@ function generateInitialPatients(data) {
                 frequency: 'BD',
                 timeDue: timeDue.toISOString(),
                 status: status,
+                prescribingDoctor: randomChoice(data.doctors),
                 justification: missedCount <= 5 ? 'Patient refused medication' : null,
                 remarks: missedCount <= 5 ? 'Initial simulation data' : '',
                 nurseId: 'System',
@@ -1015,12 +1070,14 @@ function initializeDB() {
         // Force Update Inventory Expiry to 2027-2029
         if (existingDB.inventory && Array.isArray(existingDB.inventory)) {
             existingDB.inventory.forEach((item, index) => {
-                const isExpired = index < 2; 
-                const year = isExpired ? 2025 : (2027 + Math.floor(Math.random() * 3)); // 2027 to 2029
-                const month = Math.floor(Math.random() * 12) + 1;
-                const day = Math.floor(Math.random() * 28) + 1;
-                item.expiryDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
-                item.expiry = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const isExpired = index < 2;
+                if (!Array.isArray(item.lots) || item.lots.length === 0) {
+                    const year = isExpired ? 2025 : (2027 + Math.floor(Math.random() * 3));
+                    const month = Math.floor(Math.random() * 12) + 1;
+                    const day = Math.floor(Math.random() * 28) + 1;
+                    item.lots = [createInventoryLot(item.quantity || 500, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, item.batch)];
+                }
+                refreshInventoryDerivedFields(item);
             });
         }
         
@@ -1034,6 +1091,13 @@ function initializeDB() {
                 if (!p.medications || p.medications.length === 0) {
                     const temp = generateInitialPatients(initialData).find(tp => tp.bedNumber === p.bedNumber);
                     if (temp) p.medications = temp.medications;
+                }
+                if (Array.isArray(p.medications)) {
+                    p.medications.forEach(med => {
+                        if (!med.prescribingDoctor) {
+                            med.prescribingDoctor = randomChoice(initialData.doctors);
+                        }
+                    });
                 }
             });
         }
@@ -1084,8 +1148,10 @@ function initializeDB() {
                     unusable: false,
                     isControlled: isControlled,
                     isHighAlert: isHighAlert,
-                    isIVSolution: initialData.ivSolutions.includes(name)
+                    isIVSolution: initialData.ivSolutions.includes(name),
+                    lots: [createInventoryLot(500)]
                 });
+                refreshInventoryDerivedFields(existingDB.inventory[existingDB.inventory.length - 1]);
             }
         });
 
@@ -1130,9 +1196,12 @@ function initializeDB() {
                 unusable: false,
                 isControlled: isControlled,
                 isHighAlert: isHighAlert,
-                isIVSolution: initialData.ivSolutions.includes(name)
+                isIVSolution: initialData.ivSolutions.includes(name),
+                lots: [createInventoryLot(500, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`)]
             };
         });
+
+        initialData.inventory.forEach(refreshInventoryDerivedFields);
 
         initialData.patients = generateInitialPatients(initialData);
         localStorage.setItem('popmed_db', JSON.stringify(initialData));

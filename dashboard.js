@@ -1052,12 +1052,15 @@ window.restockItem = function(itemId) {
     const item = db.inventory.find(i => i.id === itemId);
     if (!item) return;
 
+    refreshInventoryDerivedFields(item);
+
     // Show replenishment instructions for ADC Cabinet 1
     const instructions = `
         ADC CABINET 1 REPLENISHMENT PROTOCOL:
-        1. Verify Batch Number: ${item.batch}
+        1. Verify current active batch: ${item.batch}
         2. Inspect physical integrity of medication.
-        3. Place items into the designated slot.
+        3. Prepare new incoming batch and expiry details.
+        4. Place items into the designated slot.
         4. Close the drawer firmly after completion.
         
         Click OK to proceed with restocking.
@@ -1071,11 +1074,25 @@ window.restockItem = function(itemId) {
         return;
     }
 
+    const batch = prompt(`Enter NEW batch number for ${item.name}:`, `LOT-${Math.floor(Math.random() * 9000) + 1000}`);
+    if (!batch) {
+        showNotification('Batch number is required', 'error');
+        return;
+    }
+
+    const expiry = prompt(`Enter expiry date for batch ${batch} (YYYY-MM-DD):`, new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    if (!expiry || Number.isNaN(new Date(expiry).getTime())) {
+        showNotification('Invalid expiry date. Use YYYY-MM-DD format.', 'error');
+        return;
+    }
+
     // Trigger Replenishment Drawer Simulation (Cabinet 1)
     triggerDrawerSimulation(() => {
-        item.quantity += parseInt(qty);
+        if (!Array.isArray(item.lots)) item.lots = [];
+        item.lots.push(createInventoryLot(parseInt(qty), expiry, batch));
+        refreshInventoryDerivedFields(item);
         updateDB(db);
-        generateLog('INVENTORY_REPLENISHMENT', currentUser.id, `Replenished ${qty} units of ${item.name} (Batch: ${item.batch})`);
+        generateLog('INVENTORY_REPLENISHMENT', currentUser.id, `Replenished ${qty} units of ${item.name} (Batch: ${batch}, Expiry: ${expiry})`);
         renderInventory();
         showNotification(`Successfully replenished ${qty} units of ${item.name}`, 'success');
     }, "Cabinet 1: Replenishing", "Drawer Opened. Please place items into the slot.");
@@ -1179,7 +1196,7 @@ window.triggerPreparationSimulation = function(callback, solution, med) {
 }
 
 window.reportAssetIssue = function(itemId) {
-    const issue = prompt("Select issue type:\n1. Sedimentation\n2. Leakage\n3. Contamination\n4. Damaged Packaging\nEnter number (1-4):");
+    const issue = prompt("Select issue type:\n1. Sedimentation\n2. Leakage\n3. Contamination\n4. Damaged Packaging\n5. Expired\nEnter number (1-5):");
     
     let issueText = "";
     switch(issue) {
@@ -1187,6 +1204,7 @@ window.reportAssetIssue = function(itemId) {
         case '2': issueText = "Leakage"; break;
         case '3': issueText = "Contamination"; break;
         case '4': issueText = "Damaged Packaging"; break;
+        case '5': issueText = "Expired"; break;
         default: 
             if (issue) showNotification('Invalid issue selection', 'error');
             return;
@@ -1201,17 +1219,89 @@ window.reportAssetIssue = function(itemId) {
     const db = getDB();
     const item = db.inventory.find(i => i.id === itemId);
     if (item) {
+        refreshInventoryDerivedFields(item);
         if (item.quantity < parseInt(qty)) {
             showNotification('Insufficient quantity in stock to report this amount', 'error');
             return;
         }
-        
-        item.quantity -= parseInt(qty);
+
+        let targetLot = null;
+        if (Array.isArray(item.lots) && item.lots.length > 0) {
+            const lotOptions = item.lots.map((lot, index) => `${index + 1}. ${lot.batch} | ${lot.expiry} | Qty ${lot.quantity}`).join('\n');
+            const selected = prompt(`Select batch to remove from:\n${lotOptions}\nEnter number:`, '1');
+            const selectedIndex = parseInt(selected, 10) - 1;
+            targetLot = item.lots[selectedIndex];
+            if (!targetLot) {
+                showNotification('Invalid batch selection', 'error');
+                return;
+            }
+            if (targetLot.quantity < parseInt(qty)) {
+                showNotification('Selected batch does not have enough quantity', 'error');
+                return;
+            }
+            targetLot.quantity -= parseInt(qty);
+        } else {
+            item.quantity -= parseInt(qty);
+        }
+
+        refreshInventoryDerivedFields(item);
         updateDB(db);
-        generateLog('ASSET_INTEGRITY_ISSUE', currentUser.id, `Decommissioned ${qty} units of ${item.name} due to ${issueText} (Batch: ${item.batch})`);
+        generateLog('ASSET_INTEGRITY_ISSUE', currentUser.id, `Decommissioned ${qty} units of ${item.name} due to ${issueText} (Batch: ${targetLot ? targetLot.batch : item.batch})`);
         renderInventory();
         showNotification(`Reported ${issueText} for ${qty} units of ${item.name}. Assets removed from inventory.`, 'warning');
     }
+};
+
+window.showInventoryLots = function(itemId) {
+    const db = getDB();
+    const item = db.inventory.find(i => i.id === itemId);
+    if (!item) return;
+    refreshInventoryDerivedFields(item);
+
+    const lotsHtml = item.lots.map(lot => {
+        const isExpired = new Date(lot.expiry) < new Date();
+        return `
+            <div class="rounded-2xl border ${isExpired ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'} p-4">
+                <div class="flex justify-between items-start gap-3">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
+                        <p class="text-sm font-mono font-bold text-slate-900">${lot.batch}</p>
+                    </div>
+                    <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${isExpired ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${isExpired ? 'Expired' : 'Active'}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expiry</p>
+                        <p class="text-sm font-bold ${isExpired ? 'text-red-700' : 'text-slate-800'}">${lot.expiry}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Quantity</p>
+                        <p class="text-sm font-bold text-slate-800">${lot.quantity} units</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[500] flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden animate-pop-in">
+            <div class="bg-slate-900 text-white p-6 flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inventory Batch View</p>
+                    <h3 class="text-2xl font-black tracking-tight">${item.name}</h3>
+                </div>
+                <button onclick="this.closest('.fixed').remove()" class="p-3 bg-white/10 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[65vh] space-y-4 custom-scrollbar">
+                ${lotsHtml}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 };
 
 function renderInventory() {
@@ -1226,6 +1316,7 @@ function renderInventory() {
     totalSkuEl.innerText = db.inventory.length;
 
     db.inventory.sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+        refreshInventoryDerivedFields(item);
         const isLow = item.quantity < 10;
         if (isLow) lowCount++;
         
@@ -1246,13 +1337,17 @@ function renderInventory() {
                         <p class="font-black text-slate-900 group-hover:text-blue-600 transition-colors text-base md:text-sm">${item.name}</p>
                         <span class="md:hidden text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">ID: ${item.id}</span>
                     </div>
-                    <span class="hidden md:inline-block text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full mt-2">ID: ${item.id}</span>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="hidden md:inline-block text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">ID: ${item.id}</span>
+                        <button onclick="showInventoryLots('${item.id}')" class="text-[9px] font-black px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100">View ${item.lotCount || item.lots?.length || 1} Batches</button>
+                    </div>
                 </div>
 
                 <!-- Batch -->
                 <div class="grid grid-cols-2 md:block md:col-span-2 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
                     <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Batch</p>
                     <p class="text-xs font-mono font-bold text-slate-700 text-right md:text-left">${item.batch}</p>
+                    <p class="text-[8px] font-bold text-slate-400 text-right md:text-left mt-1">${item.lotCount || item.lots?.length || 1} batch(es)</p>
                 </div>
 
                 <!-- Stock -->
@@ -1640,4 +1735,3 @@ function closePatientModal() {
     modal.classList.add('hidden');
     document.body.style.overflow = '';
 }
-

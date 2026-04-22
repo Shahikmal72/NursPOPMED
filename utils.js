@@ -148,6 +148,10 @@ function checkAlerts() {
 
     // Pharmacy Inventory Management (PAR Level Alerts)
     db.inventory.forEach(item => {
+        if (typeof refreshInventoryDerivedFields === 'function') {
+            refreshInventoryDerivedFields(item);
+        }
+
         if (item.quantity < item.parLevel) {
             alerts.push({
                 type: 'stock',
@@ -1368,6 +1372,11 @@ function findInventoryItem(db, medName) {
     
     // Filter active inventory
     const activeInventory = db.inventory.filter(item => !item.unusable && item.quantity > 0);
+    activeInventory.forEach(item => {
+        if (typeof refreshInventoryDerivedFields === 'function') {
+            refreshInventoryDerivedFields(item);
+        }
+    });
     
     // Sort by expiry date (FIFO logic)
     activeInventory.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
