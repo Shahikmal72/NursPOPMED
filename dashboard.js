@@ -91,7 +91,7 @@ function renderSevenRightsSummary(patient, med) {
         { label: 'Dose', value: med.dose || 'Not set', ok: !!med.dose },
         { label: 'Route', value: med.route || 'Not set', ok: !!med.route },
         { label: 'Time', value: formatDateTime(med.timeDue), ok: timeOk },
-        { label: 'Reason', value: patient.info.diagnosis || 'Clinical indication', ok: true },
+        { label: 'Reason', value: med.reasonForPrescription || patient.info.diagnosis || 'Clinical indication', ok: true },
         { label: 'Documentation', value: med.status === 'Administered' || med.status === 'Given' ? 'Recorded' : 'Pending record', ok: med.status === 'Administered' || med.status === 'Given' }
     ];
 
@@ -812,8 +812,6 @@ function renderCabinet2() {
     const patient = currentBCMAPatient;
     const medications = patient.medications;
     const dispensedMeds = medications.filter(m => m.status === 'Dispensed');
-    const verificationMedication = medications.find(m => !['Given', 'Administered', 'Missed'].includes(m.status)) || medications.find(m => m.status === 'Missed') || medications[0];
-    
     let mainContentHtml = `
         <div class="flex-grow flex flex-col gap-4">
             <!-- Top Clinical Header (Details at a glance) -->
@@ -943,7 +941,7 @@ function renderCabinet2() {
                                                 <div class="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
                                                     <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Right Time / Reason / Documentation</p>
                                                     <p class="text-[9px] font-bold ${isOverdue ? 'text-red-600' : 'text-slate-700'} mt-1">${isOverdue ? 'Overdue review required' : 'Scheduled window active'}</p>
-                                                    <p class="text-[9px] font-bold text-slate-700">${patient.info.diagnosis}</p>
+                                                    <p class="text-[9px] font-bold text-slate-700">${med.reasonForPrescription || patient.info.diagnosis}</p>
                                                     <p class="text-[9px] font-bold ${isGiven ? 'text-emerald-700' : 'text-amber-700'}">${isGiven ? 'Documented in eMAR' : 'Awaiting documentation'}</p>
                                                 </div>
                                             </div>
@@ -990,9 +988,6 @@ function renderCabinet2() {
                     </table>
                 </div>
 
-                <div class="border-t border-slate-100 bg-slate-50/70 p-4 md:p-6">
-                    ${verificationMedication ? renderSevenRightsBoard(patient, verificationMedication) : ''}
-                </div>
             </div>
         </div>
     `;

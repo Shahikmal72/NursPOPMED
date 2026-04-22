@@ -279,6 +279,16 @@
             #dashboard-section .group img {
                 transform: none !important;
             }
+
+            #dashboard-section .group > .absolute,
+            #login-screen > .absolute {
+                display: none !important;
+            }
+
+            #patient-modal .sticky,
+            #patient-modal [class*="sticky"] {
+                position: static !important;
+            }
         }
 
         button {
@@ -1490,7 +1500,7 @@
                                         </td>
                                         <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
                                             <p style="font-size: 11px; font-weight: 700; color: #334155; margin: 0;">${new Date(m.timeDue).toLocaleString()}</p>
-                                            <p style="font-size: 9px; font-weight: 700; color: #64748b; margin: 4px 0 0 0;">Reason: ${patient.info.diagnosis || 'Clinical indication'}</p>
+                                            <p style="font-size: 9px; font-weight: 700; color: #64748b; margin: 4px 0 0 0;">Reason: ${m.reasonForPrescription || patient.info.diagnosis || 'Clinical indication'}</p>
                                         </td>
                                         <td style="padding: 15px; border-bottom: 1px solid #e2e8f0;">
                                             ${m.timeAdministered ? `
@@ -1788,7 +1798,7 @@
                         <div class="relative z-10">
                             <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 inline-block backdrop-blur-md">Clinical Monograph</span>
                             <h2 class="text-2xl md:text-4xl font-black tracking-tighter mb-2">${resolvedName}</h2>
-                            <p class="text-blue-200 font-bold text-xs md:text-sm uppercase tracking-widest opacity-80">Comprehensive Patient Education With APA 7 Citations</p>
+                            <p class="text-blue-200 font-bold text-xs md:text-sm uppercase tracking-widest opacity-80">Comprehensive Patient Education With Evidence-Based References</p>
                         </div>
                     </div>
 
@@ -1844,7 +1854,7 @@
                                 `).join('')}
 
                                 <section class="rounded-3xl bg-slate-900 p-5 text-white">
-                                    <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References (APA 7th Ed.)</p>
+                                    <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References</p>
                                     <div class="space-y-2">
                                         ${references.map(citation => `<p class="text-xs font-semibold text-slate-100 leading-relaxed">${citation}</p>`).join('')}
                                     </div>
@@ -2122,13 +2132,13 @@
                                     ${section.notes.map(note => `
                                         <div class="card">
                                             <p class="note">${note.text}</p>
-                                            <p class="cite">APA 7: ${note.citation}</p>
+                                            <p class="cite">Reference: ${note.citation}</p>
                                         </div>
                                     `).join('')}
                                 </div>
                             `).join('')}
                             <div class="refs">
-                                <div class="section-title">Evidence-Based References (APA 7th Ed.)</div>
+                                <div class="section-title">Evidence-Based References</div>
                                 ${references.map(citation => `<p class="cite" style="margin-top:0;">${citation}</p>`).join('')}
                             </div>
                         </div>

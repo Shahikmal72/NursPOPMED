@@ -133,15 +133,7 @@ function checkAuth() {
 
 window.isStaffNurse = function() {
     if (!currentUser) return false;
-    // Strict Role-Based Access Control (SRBAC)
-    // Only high-level nursing roles are authorized for clinical configuration and timing adjustments
-    const authorizedNursingRoles = [
-        'Director of Nursing', 
-        'Assistant Director of Nursing', 
-        'Advanced Nursing Practitioner',
-        'Nurse Manager'
-    ];
-    return authorizedNursingRoles.includes(currentUser.role);
+    return /nurse/i.test(currentUser.role || '');
 };
 
 window.isMedicalDoctor = function() {
@@ -162,8 +154,8 @@ window.isAuthorizedForAction = function(actionType) {
     
     switch(actionType) {
         case 'MED_ADMINISTRATION':
-            // Only Registered Nurses and Advanced Practitioners can administer medications
-            return ['Nurse', 'Advanced Nursing Practitioner', 'Nurse Manager', 'Director of Nursing'].includes(role);
+            // Medical doctors and all nursing roles are authorized to administer
+            return role === 'Medical Doctor' || /nurse/i.test(role || '');
             
         case 'MED_DISPENSING':
             // Security Update: Doctors, Nurses, and Pharmacists are all authorized to dispense from ADC

@@ -728,6 +728,9 @@ function normalizeOperationalData(db) {
                 if (!med.prescribedAt) {
                     med.prescribedAt = createRandomTodayTimestamp(new Date(), 20, 720);
                 }
+                if (!med.reasonForPrescription) {
+                    med.reasonForPrescription = initialData.medicationProtocols?.[med.name]?.he?.reason || patient.info?.diagnosis || 'Clinical indication';
+                }
 
                 if (med.status === 'Missed') {
                     missedCounter++;
@@ -977,52 +980,94 @@ function generateInitialPatients(data) {
     const lastNames = ['Abdullah', 'Rahman', 'Ismail', 'Yusof', 'Ibrahim', 'Aziz', 'Hamzah', 'Saleh', 'Mahmud', 'Idris'];
     const nurses = ['Nurse Arisya', 'Nurse Shah', 'Nurse Leeya'];
     const commonAllergies = ['Penicillin', 'Sulfa Drugs', 'Aspirin', 'NSAIDs', 'None (NKDA)'];
-    const diagnoses = [
-        'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
-        'Congestive Cardiac Failure (CCF) - NYHA Class III',
-        'Community Acquired Pneumonia (CAP) - CURB-65 Score 2',
-        'Chronic Kidney Disease (CKD) Stage 4',
-        'Post-Appendectomy with Surgical Site Infection (SSI)',
-        'Essential Hypertension with Hypertensive Urgency',
-        'Acute Exacerbation of Bronchial Asthma (AEBA)'
-    ];
-
-    const allMedNames = [
-        ...data.medications.oral,
-        ...data.medications.iv,
-        ...data.medications.injection,
-        ...data.medications.emergency,
-        ...data.medications.others,
-        ...data.ivSolutions
+    const clinicalScenarios = [
+        {
+            diagnosis: 'Type 2 Diabetes Mellitus with Diabetic Foot Ulcer (DFU)',
+            meds: [
+                { name: 'Insulin Actrapid (Soluble) SC', dose: '6 units', route: 'Subcutaneous (SC)', freq: 'TDS' },
+                { name: 'Insulin Insulatard (NPH) SC', dose: '12 units', route: 'Subcutaneous (SC)', freq: 'ON' },
+                { name: 'Metformin 500mg Tablet', dose: '500mg', route: 'Oral (PO)', freq: 'BD' },
+                { name: 'Amoxicillin 500mg Capsule', dose: '500mg', route: 'Oral (PO)', freq: 'TDS' }
+            ]
+        },
+        {
+            diagnosis: 'Acute Coronary Syndrome (ACS) - NSTEMI',
+            meds: [
+                { name: 'Aspirin 75mg Tablet', dose: '75mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Clopidogrel 75mg Tablet', dose: '75mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Enoxaparin 40mg/0.4ml Pre-filled Syringe', dose: '40mg', route: 'Subcutaneous (SC)', freq: 'OD' },
+                { name: 'Bisoprolol 5mg Tablet', dose: '5mg', route: 'Oral (PO)', freq: 'OD' }
+            ]
+        },
+        {
+            diagnosis: 'Community Acquired Pneumonia (CAP) - CURB-65 Score 2',
+            meds: [
+                { name: 'Ceftriaxone 1g Injection', dose: '1g', route: 'Intravenous (IV)', freq: 'BD' },
+                { name: 'Paracetamol 500mg Tablet', dose: '1g', route: 'Oral (PO)', freq: 'PRN (Fever)' },
+                { name: 'Ondansetron 4mg/2ml Injection', dose: '4mg', route: 'Intravenous (IV)', freq: 'PRN' },
+                { name: 'Sodium Chloride 0.9% (Normal Saline) 500ml Infusion', dose: '500ml', route: 'Intravenous (IV)', freq: 'Continuous' }
+            ]
+        },
+        {
+            diagnosis: 'Chronic Kidney Disease (CKD) Stage 4 with Fluid Overload',
+            meds: [
+                { name: 'Furosemide 20mg/2ml Injection', dose: '20mg', route: 'Intravenous (IV)', freq: 'BD' },
+                { name: 'Calcium Gluconate 10% Injection', dose: '10ml', route: 'Intravenous (IV)', freq: 'Stat / PRN' },
+                { name: 'Pantoprazole 40mg Injection', dose: '40mg', route: 'Intravenous (IV)', freq: 'OD' },
+                { name: 'Sodium Chloride 0.9% (Normal Saline) 500ml Infusion', dose: '500ml', route: 'Intravenous (IV)', freq: 'As Prescribed' }
+            ]
+        },
+        {
+            diagnosis: 'Post-Appendectomy with Surgical Site Infection (SSI)',
+            meds: [
+                { name: 'Morphine 10mg/ml Injection (Controlled Drug)', dose: '2.5mg', route: 'Intravenous (IV)', freq: 'PRN (Pain)' },
+                { name: 'Metronidazole 500mg/100ml IV Infusion', dose: '500mg', route: 'Intravenous (IV)', freq: 'TDS' },
+                { name: 'Pantoprazole 40mg Injection', dose: '40mg', route: 'Intravenous (IV)', freq: 'OD' },
+                { name: 'Ondansetron 4mg/2ml Injection', dose: '4mg', route: 'Intravenous (IV)', freq: 'PRN' }
+            ]
+        },
+        {
+            diagnosis: 'Essential Hypertension with Hypertensive Urgency',
+            meds: [
+                { name: 'Amlodipine 5mg Tablet', dose: '5mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Perindopril 4mg Tablet', dose: '4mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Bisoprolol 5mg Tablet', dose: '5mg', route: 'Oral (PO)', freq: 'OD' },
+                { name: 'Furosemide 20mg/2ml Injection', dose: '20mg', route: 'Intravenous (IV)', freq: 'PRN' }
+            ]
+        },
+        {
+            diagnosis: 'Sepsis with Hypotension Requiring Hemodynamic Support',
+            meds: [
+                { name: 'Piperacillin/Tazobactam 4.5g Injection', dose: '4.5g', route: 'Intravenous (IV)', freq: 'TDS' },
+                { name: 'Noradrenaline 4mg/4ml Injection', dose: '4mg', route: 'Intravenous (IV)', freq: 'Titrated Infusion' },
+                { name: 'Sodium Chloride 0.9% (Normal Saline) 500ml Infusion', dose: '500ml', route: 'Intravenous (IV)', freq: 'Bolus / As Prescribed' },
+                { name: 'Paracetamol 500mg Tablet', dose: '1g', route: 'Oral (PO)', freq: 'PRN (Fever)' }
+            ]
+        }
     ];
 
     const patients = [];
-    let totalMedsCreated = 0;
     let pendingCount = 0;
     let missedCount = 0;
     let documentedCount = 0;
     const now = new Date();
+    const shuffledDoctors = [...data.doctors].sort(() => 0.5 - Math.random());
 
     for (let i = 1; i <= 25; i++) {
         const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
         const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const doctor = data.doctors[Math.floor(Math.random() * data.doctors.length)];
+        const doctor = shuffledDoctors[(i - 1) % shuffledDoctors.length];
         const nurse = nurses[Math.floor(Math.random() * nurses.length)];
-        const diagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
+        const scenario = clinicalScenarios[(i - 1) % clinicalScenarios.length];
         const allergy = commonAllergies[Math.floor(Math.random() * commonAllergies.length)];
-        
-        const medCount = Math.floor(Math.random() * 4) + 4;
         const patientMeds = [];
-        const shuffledMeds = [...allMedNames].sort(() => 0.5 - Math.random());
-        
-        for(let m=0; m < medCount; m++) {
-            const medName = shuffledMeds[m];
+        const scenarioMeds = [...scenario.meds];
+
+        for (let m = 0; m < scenarioMeds.length; m++) {
+            const medTemplate = scenarioMeds[m];
+            const medName = medTemplate.name;
             const invItem = data.inventory.find(inv => inv.name === medName);
-            
-            let route = 'Oral (PO)';
-            if (data.medications.iv.includes(medName)) route = 'Intravenous (IV)';
-            if (data.medications.injection.includes(medName)) route = 'Subcutaneous (SC)';
-            if (data.medications.emergency.includes(medName)) route = 'Intravenous (IV)';
+            const protocol = data.medicationProtocols[medName];
 
             let status = 'Pending';
             let timeDue;
@@ -1061,13 +1106,14 @@ function generateInitialPatients(data) {
                 id: `MED-${Date.now()}-${i}-${m}`,
                 name: medName,
                 barcode: invItem ? invItem.barcode : `BC-UNK-${Date.now()}`,
-                dose: medName.includes('mg') ? medName.split(' ').filter(word => word.includes('mg'))[0] || '1 unit' : '1 unit',
-                route: route,
-                frequency: 'BD',
+                dose: medTemplate.dose,
+                route: medTemplate.route,
+                frequency: medTemplate.freq,
                 timeDue: timeDue.toISOString(),
                 status: status,
                 prescribedAt: createRandomTodayTimestamp(now, 15, 600),
-                prescribingDoctor: randomChoice(data.doctors),
+                prescribingDoctor: doctor,
+                reasonForPrescription: protocol?.he?.reason || scenario.diagnosis,
                 justification: justification,
                 remarks: remarks,
                 nurseId: 'System',
@@ -1076,7 +1122,6 @@ function generateInitialPatients(data) {
                 timeAdministered: timeAdministered,
                 nurseName: status === 'Administered' ? nurse : null
             });
-            totalMedsCreated++;
         }
 
         patients.push({
@@ -1088,7 +1133,7 @@ function generateInitialPatients(data) {
                 bedNumber: i,
                 doctor: doctor,
                 nurseInCharge: nurse,
-                diagnosis: diagnosis,
+                diagnosis: scenario.diagnosis,
                 allergies: allergy,
                 clinicalProgress: 'Patient is clinically stable. Vital signs are within normal limits (WNL). Wound site shows healthy granulation tissue. Plan for step-down oral antibiotics.',
                 diagnosticResults: {

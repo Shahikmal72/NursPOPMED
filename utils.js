@@ -70,7 +70,7 @@ function getMedicationEducationBundle(medName, med = null, db = getDB()) {
 }
 
 function renderCitationBadge(citation, extraClasses = '') {
-    return `<p class="text-[10px] font-semibold leading-relaxed text-slate-500 mt-2 ${extraClasses}">APA 7: ${citation}</p>`;
+    return `<p class="text-[10px] font-semibold leading-relaxed text-slate-500 mt-2 ${extraClasses}">Reference: ${citation}</p>`;
 }
 
 function renderEducationNotesList(notes, listClass = 'space-y-3') {
@@ -556,7 +556,7 @@ function showHEModal(patient, med) {
                     ${generateNurseStamp(currentUser.fullname, currentUser.role)}
                 </div>
                 <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-4">
-                    Evidence-Based Reference (APA 7th Ed.):<br>
+                    Evidence-Based Reference:<br>
                     ${info.citation || 'Standard Nursing Guidelines'}
                 </p>
             </div>
@@ -1101,7 +1101,7 @@ function buildEducationPrintSection(section) {
                 ${section.notes.map(note => `
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px;">
                         <p style="margin: 0; font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.6;">${note.text}</p>
-                        <p style="margin: 10px 0 0 0; font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.5;">APA 7: ${note.citation}</p>
+                        <p style="margin: 10px 0 0 0; font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.5;">Reference: ${note.citation}</p>
                     </div>
                 `).join('')}
             </div>
@@ -1195,7 +1195,7 @@ function showHEModal(patient, med) {
                     ${generateNurseStamp(currentUser.fullname, currentUser.role)}
                 </div>
                 <div class="w-full rounded-3xl bg-white/5 p-4 text-left border border-white/5">
-                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References (APA 7th Ed.)</p>
+                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-3">Evidence-Based References</p>
                     <div class="space-y-2">
                         ${references.map(citation => `<p class="text-[11px] font-semibold text-slate-200 leading-relaxed">${citation}</p>`).join('')}
                     </div>
@@ -1277,7 +1277,7 @@ function generateHEPamphlet(patient, med) {
                     </div>
                 </div>
                 <div class="refs">
-                    <div class="label">Evidence-Based References (APA 7th Ed.)</div>
+                    <div class="label">Evidence-Based References</div>
                     ${references.map(citation => `<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #475569; line-height: 1.6;">${citation}</p>`).join('')}
                 </div>
                 <div class="no-print">
