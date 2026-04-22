@@ -670,12 +670,12 @@ function renderCabinet2() {
         else currentBCMAPatient = occupiedPatients[0];
     }
 
-    // Master Split-Pane Container (Single Screen Focus)
-    container.className = "h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 p-4 overflow-hidden"; 
+    // Master Split-Pane Container (Responsive Focus)
+    container.className = "flex flex-col lg:flex-row gap-4 p-4 min-h-0"; 
     
     // 1. LEFT SIDEBAR: Compact Bed List (Fixed width on desktop, Horizontal on mobile)
     let sidebarHtml = `
-        <div class="w-full lg:w-72 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar pr-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0">
+        <div class="w-full lg:w-72 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar pr-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0 max-h-[120px] lg:max-h-[70vh]">
             <div class="hidden lg:flex px-4 py-3 bg-slate-900 text-white rounded-2xl items-center justify-between shadow-lg mb-2">
                 <span class="text-[10px] font-black uppercase tracking-widest">Bed Unit</span>
                 <span class="px-2 py-0.5 bg-blue-500 rounded text-[9px] font-bold">${occupiedPatients.length} Active</span>
@@ -709,27 +709,27 @@ function renderCabinet2() {
     const dispensedMeds = medications.filter(m => m.status === 'Dispensed');
     
     let mainContentHtml = `
-        <div class="flex-grow flex flex-col gap-4 overflow-hidden">
+        <div class="flex-grow flex flex-col gap-4">
             <!-- Top Clinical Header (Details at a glance) -->
-            <div class="bg-white rounded-3xl p-6 border-2 border-slate-100 shadow-xl flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-6">
-                    <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-500/20">
+            <div class="bg-white rounded-3xl p-4 md:p-6 border-2 border-slate-100 shadow-xl flex flex-col md:flex-row items-center justify-between shrink-0 gap-4">
+                <div class="flex items-center gap-4 md:gap-6 w-full md:w-auto">
+                    <div class="w-12 h-12 md:w-16 md:h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl font-black shadow-lg shadow-blue-500/20 shrink-0">
                         ${patient.bedNumber}
                     </div>
-                    <div>
-                            <h2 class="text-2xl font-black text-slate-900 tracking-tighter leading-none">${patient.info.name}</h2>
-                            <div class="flex gap-4 mt-2">
-                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">${(patient.info.doctor.startsWith('Dr.') ? '' : 'Dr. ') + patient.info.doctor}</p>
+                    <div class="min-w-0">
+                            <h2 class="text-lg md:text-2xl font-black text-slate-900 tracking-tighter leading-none truncate">${patient.info.name}</h2>
+                            <div class="flex gap-2 md:gap-4 mt-1 md:mt-2">
+                                <p class="text-[8px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest truncate">${(patient.info.doctor.startsWith('Dr.') ? '' : 'Dr. ') + patient.info.doctor}</p>
                                 <span class="text-slate-200">•</span>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nurse: ${patient.info.nurseInCharge}</p>
+                                <p class="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Nurse: ${patient.info.nurseInCharge}</p>
                             </div>
                         </div>
                 </div>
 
-                <div class="flex gap-8 px-8 border-l border-slate-100">
+                <div class="hidden xl:flex gap-8 px-8 border-l border-slate-100">
                     <div>
                         <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Primary Diagnosis</p>
-                        <p class="text-xs font-black text-slate-700 max-w-[250px] truncate">${patient.info.diagnosis}</p>
+                        <p class="text-xs font-black text-slate-700 max-w-[200px] truncate">${patient.info.diagnosis}</p>
                     </div>
                     <div class="px-6 py-2 rounded-xl ${patient.info.allergies !== 'None (NKDA)' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}">
                         <p class="text-[8px] font-black uppercase tracking-widest mb-0.5">Allergies</p>
@@ -737,46 +737,41 @@ function renderCabinet2() {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <div class="text-right">
-                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Vitals (Last Refreshed)</p>
+                <div class="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+                    <div class="text-right hidden sm:block mr-2">
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Vitals</p>
                         <div class="flex gap-3 text-[10px] font-black text-slate-900">
                             <span class="text-blue-600">${patient.info.diagnosticResults.vitals.bp}</span>
-                            <span class="text-red-600">${patient.info.diagnosticResults.vitals.hr} bpm</span>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="openPatientModal(${patient.bedNumber})" class="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 active:scale-95 transition-all flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            Click patient profile
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <button onclick="openPatientModal(${patient.bedNumber})" class="bg-slate-900 text-white px-3 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 active:scale-95 transition-all flex items-center gap-2">
+                            Profile
                         </button>
-                        <button onclick="generatePrescriptionPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                            Print eMAR
+                        <button onclick="generatePrescriptionPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-blue-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                            eMAR
                         </button>
-                        <button onclick="generateAllHEPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            Print HE Notes
+                        <button onclick="generateAllHEPrint(${JSON.stringify(patient).replace(/"/g, '&quot;')})" class="bg-indigo-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2">
+                            HE
                         </button>
-                        <button onclick="openPatientBCMAModal(${patient.bedNumber})" class="btn-premium px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all">
-                            Patient History
+                        <button onclick="openPatientBCMAModal(${patient.bedNumber})" class="btn-premium px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all">
+                            History
                         </button>
                     </div>
                 </div>
             </div>
 
             <!-- eMAR Table (Scrollable area) -->
-            <div class="flex-grow bg-white rounded-3xl border-2 border-slate-100 shadow-2xl overflow-hidden flex flex-col">
-                <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
-                    <h3 class="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Standard Clinical Administration Record (eMAR)</h3>
+            <div class="bg-white rounded-3xl border-2 border-slate-100 shadow-2xl overflow-hidden flex flex-col">
+                <div class="px-4 md:px-8 py-3 md:py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+                    <h3 class="text-[9px] md:text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Standard Clinical Administration Record (eMAR)</h3>
                     <div class="flex items-center gap-3">
                         <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase">${medications.length} Rx</span>
-                        ${dispensedMeds.length > 0 ? `<span class="px-2 py-0.5 bg-green-500 text-white rounded text-[9px] font-black animate-pulse">${dispensedMeds.length} DISPENSED</span>` : ''}
                     </div>
                 </div>
 
-                <div class="flex-grow overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-left border-collapse">
+                <div class="max-h-[50vh] overflow-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead class="sticky top-0 bg-white z-10 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                             <tr>
                                 <th class="px-8 py-4">Medication Agent</th>
