@@ -1093,6 +1093,49 @@
             renderDevelopers();
         });
 
+        function normalizeLoginIdentifier(value) {
+            return (value || '').trim().toLowerCase().replace(/\s+/g, '_');
+        }
+
+        function normalizeLooseLoginIdentifier(value) {
+            return (value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/^(mr|mrs|ms|miss|sir|dr)\.?\s+/i, '')
+                .replace(/[^a-z0-9]/g, '');
+        }
+
+        function findUserForLogin(value, db) {
+            const strictValue = normalizeLoginIdentifier(value);
+            const looseValue = normalizeLooseLoginIdentifier(value);
+
+            return db.users.find(user => {
+                const candidates = [
+                    user.id,
+                    user.fullname,
+                    user.id?.replace(/_/g, ' '),
+                    user.fullname?.replace(/\./g, '')
+                ].filter(Boolean);
+
+                return candidates.some(candidate =>
+                    normalizeLoginIdentifier(candidate) === strictValue ||
+                    normalizeLooseLoginIdentifier(candidate) === looseValue
+                );
+            }) || null;
+        }
+
+        function directLoginFallback(userId, password) {
+            const db = getDB();
+            const user = findUserForLogin(userId, db);
+            if (!user) return null;
+            if (String(user.password) !== String(password).trim()) return null;
+
+            currentUser = user;
+            sessionStorage.setItem('popmed_user_id', user.id);
+            sessionStorage.setItem('popmed_user', JSON.stringify(user));
+            return { success: true, user };
+        }
+
         function renderDevelopers() {
             const db = getDB();
             const devList = document.getElementById('developer-list');
@@ -2074,7 +2117,11 @@
                 // Add a small artificial delay for "smoothness"
                 await new Promise(resolve => setTimeout(resolve, 800));
 
-                const authResult = login(id, pass);
+                let authResult = login(id, pass);
+                if (!((typeof authResult === 'object' && authResult !== null && authResult.success) || authResult === true)) {
+                    const fallbackResult = directLoginFallback(id, pass);
+                    if (fallbackResult) authResult = fallbackResult;
+                }
 
                 // Resilience check: Handle both object (new version) and boolean (old cached version) returns
                 const isSuccess = (typeof authResult === 'object' && authResult !== null) ? authResult.success : authResult;
