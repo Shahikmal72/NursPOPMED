@@ -1,5 +1,7 @@
 // Dashboard and Main UI Logic
 let currentBCMAPatient = null;
+let bcmaBedListScrollTop = 0;
+let bcmaBedListScrollLeft = 0;
 
 function formatPrescriberName(name) {
     if (!name) return 'Not documented';
@@ -324,7 +326,7 @@ function openPatientBCMAModal(bedNumber) {
                                                    </div>`
                                                 : `
                                                     ${isOverdue ? `
-                                                        <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="bg-red-500 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-600 transition-all">Document Missed</button>
+                                                        <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="bg-red-500 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-600 transition-all">Omit Dose</button>
                                                     ` : ''}
                                                     <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Administered</button>
                                                   `
@@ -780,7 +782,7 @@ function renderCabinet2() {
     
     // 1. LEFT SIDEBAR: Compact Bed List (Fixed width on desktop, Horizontal on mobile)
     let sidebarHtml = `
-        <div class="w-full lg:w-72 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar pr-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0 max-h-[120px] lg:max-h-[70vh]">
+        <div id="bcma-bed-list" class="w-full lg:w-72 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar pr-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 pb-4 lg:pb-0 max-h-[120px] lg:max-h-[70vh]">
             <div class="hidden lg:flex px-4 py-3 bg-slate-900 text-white rounded-2xl items-center justify-between shadow-lg mb-2">
                 <span class="text-[10px] font-black uppercase tracking-widest">Bed Unit</span>
                 <span class="px-2 py-0.5 bg-blue-500 rounded text-[9px] font-bold">${occupiedPatients.length} Active</span>
@@ -993,9 +995,24 @@ function renderCabinet2() {
     `;
 
     container.innerHTML = sidebarHtml + mainContentHtml;
+
+    const bedList = document.getElementById('bcma-bed-list');
+    if (bedList) {
+        bedList.scrollTop = bcmaBedListScrollTop;
+        bedList.scrollLeft = bcmaBedListScrollLeft;
+        bedList.onscroll = () => {
+            bcmaBedListScrollTop = bedList.scrollTop;
+            bcmaBedListScrollLeft = bedList.scrollLeft;
+        };
+    }
 }
 
 window.selectPatientForBCMA = function(mrn) {
+    const existingBedList = document.getElementById('bcma-bed-list');
+    if (existingBedList) {
+        bcmaBedListScrollTop = existingBedList.scrollTop;
+        bcmaBedListScrollLeft = existingBedList.scrollLeft;
+    }
     const db = getDB();
     const patient = db.patients.find(p => p.info.mrn === mrn);
     if (patient) {
