@@ -325,9 +325,7 @@ function openPatientBCMAModal(bedNumber) {
                                                      ${generateNurseStamp(med.nurseName || currentUser.fullname, med.nurseRole || currentUser.role)}
                                                    </div>`
                                                 : `
-                                                    ${isOverdue ? `
-                                                        <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="bg-red-500 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-600 transition-all">Omit Dose</button>
-                                                    ` : ''}
+                                                    <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="bg-red-500 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-600 transition-all">Omit Dose</button>
                                                     <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="btn-premium px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Administered</button>
                                                   `
                                             }
@@ -975,9 +973,7 @@ function renderCabinet2() {
                                                 ? `<p class="text-[9px] font-black text-red-600 uppercase tracking-widest">Documented Missed</p>`
                                                 : `
                                                     <div class="flex justify-end gap-2">
-                                                        ${isOverdue ? `
-                                                            <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="px-4 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 active:scale-95 transition-all">Omit</button>
-                                                        ` : ''}
+                                                        <button onclick="handleShowMissedJustification(${patient.bedNumber}, '${med.id}')" class="px-4 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 active:scale-95 transition-all">Omit</button>
                                                         <button onclick="handleOneClickAdminister(${patient.bedNumber}, '${med.id}')" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Administer</button>
                                                     </div>
                                                   `
